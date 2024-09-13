@@ -1,0 +1,356 @@
+<!-- Version: 1.0.3 -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>open qLAMP server &#9729;</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="functions.js"></script>
+
+    <!-- Check if there's a protocol running. Wait until we got an answer -->
+
+</head>
+
+<body>
+    <div class="uk-container uk-container-xlarge uk-margin-medium-top">
+        <div class="uk-grid">
+
+            <div class="uk-width-1-2" id="fluorescence_wrapper">
+                <canvas id="fluorescence"></canvas>
+                <!-- create a toggle switch between relative or absolute -->
+                <div class="uk-margin-small-top" style="visibility:hidden">
+                </div>
+            </div>
+
+            <div class="uk-width-1-2">
+                <canvas id="temperature"></canvas>
+            </div>
+            <div class="uk-width-1-2">
+                <div class="uk-grid">
+                    <div class="uk-width-1-4">
+                        <p class="uk-text-left" style="height: 5px; margin-left: 10px;font-size: 15px;">Used memory</p>
+                        <div id="memorySlider">
+                            <div id="occupiedMemory"></div>
+                        </div> 
+                    </div>
+                    <div class="uk-width-1-4">
+                        <p class="uk-text-left" style="height: 5px; margin-left: 10px;font-size: 15px;margin-bottom:20px;">Simplify chart</p>
+                        <label id="simplify_label" class="switch" style="margin-left:15px;margin-top: 0px;margin-bottom: 20px; height: 10px; width: 25px;">
+                            <input type="checkbox" id="simplify" checked>
+                            <span class="slider round simplify"></span>
+                        </label>   
+                    </div>
+                    <div class="uk-width-1-2">
+                        <button class="uk-button uk-button-primary uk-button-small" style="margin-top: 10px;" id="last_run_load">Load last experiment data</button>  
+                    </div>
+                </div> 
+            </div>
+        </div>
+
+    
+
+        <ul class="uk-subnav uk-subnav-pill" uk-switcher>
+		    <li>
+                <a href="#">Experiment design</a>
+            </li>
+            <li>
+                <a href="#">Experiment run</a>
+            </li>
+            <li>
+                <a href="#">Analysis</a>
+            </li>
+            <li>
+                <a href="#">Calibrating</a>
+            </li>
+        </ul>
+
+        <ul class="uk-switcher uk-margin">
+                                             
+            <li> <!-- Experiment design --> 
+                <div class="uk-text-left" style="margin-bottom: 10px;" uk-grid>
+                    <div class="uk-width-1-4">
+                        <div class="uk-card uk-card-default uk-card-body">
+                            <h3 class="uk-card-title">Library</h3>
+                            <table class="uk-table uk-table-striped uk-table-hover uk-table-small uk-tabble-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Protocols</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="protocol_library">
+
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="uk-width-3-4">
+                        <!-- draw a canvas for drawing the tubes with javascript -->
+                        <canvas id="tubes" width="600" height="100"></canvas>
+                        <!-- add a table for the sample types to be updated with javascript-->
+                        <table class="uk-table uk-table-striped uk-table-hover uk-table-small uk-tabble-middle" style="width:700px;table-layout: fixed;">
+                            <thead>
+                                <tr>
+                                    <th>Sample color</th>
+                                    <th>Sample name</th>
+                                    <th>Wells</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sample-table">
+                                <tr>
+                                    
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div style="width:400px; margin-top: 50px;">
+                            <!-- add a button with the sape of a plus -->
+                            <button class="uk-button uk-button-primary uk-button-small" id="add-sample">Add sample</button>
+                        </div>  
+                    </div>
+
+            </li>
+            <li  class="options" style="visibility: visible;"> <!-- experiment run -->
+                <div class="uk-heading-xsmall" style="margin-bottom: 10px;">Launch</div>
+                <div>
+                    <div class="uk-card" style="width: 170px; margin-bottom: 20px; border: 1px solid #1E87F0 ">
+                        <p class="uk-text-left" style="margin-left: 10px; margin-bottom:0px; margin-top:10px;font-size: 12px;">Mode (Normal - Melting)</p>
+                        <label id="melting_label" class="switch" style="margin-left:10px;margin-top: 5px;margin-bottom: 10px;">
+                            <input type="checkbox" id="melting">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <input type="Number" class="uk-input uk-form-width-xsmall" style="margin-right:2px;" pattern="^[0-9]{1,2}$/" placeholder="ºC" id="degrees">
+                    <button class="uk-button uk-button-primary uk-button-small" id="temp">Run</button>
+                    <button class="uk-button uk-button-primary uk-button-small" id="cycle">Cycle</button>                     
+                </div>
+                <div class="uk-heading-xsmall uk-margin-medium-top">Protocol options</div>
+                <div>
+                    <div class="uk-width-1-2">
+                        <input type="Number" class="uk-input uk-form-width-small" pattern="^[0-9]{1,2}$/" min="10" placeholder="" id="cycle-time">
+                        <button class="uk-button uk-button-primary uk-button-small" id="cycle-time-set" style="width:165px;">Set cycle time (s)</button>
+                    </div>
+                    <!-- new row -->
+                    <div class="uk-width-1-2">
+                        <input type="Number" class="uk-input uk-form-width-small" pattern="^[0-9]{1,2}$/" min="30" max="130" placeholder="" id="lid-temp">
+                        <button class="uk-button uk-button-primary uk-button-small" id="lid-temp-set" style="width:165px;">Set lid temp (ºC)</button>
+                    </div>
+                    <!-- new row -->
+                    <div class="uk-width-1-2">
+                        <input type="Number" class="uk-input uk-form-width-small" pattern="^[0-9]{1,2}$/" min="0" max="50" placeholder="" id="lid-diff">
+                        <button class="uk-button uk-button-primary uk-button-small" id="lid-diff-set" style="width:165px;">Set lid diff (ºC)</button>
+                </div>
+                <div class="uk-heading-xsmall uk-margin-medium-top">Melting curve options</div>
+                <div>
+                    <div class="uk-width-1-2">
+                        <input type="Number" class="uk-input uk-form-width-small" pattern="[0-9]+([\.,][0-9]+)?" min="0.01" max="5" placeholder="" id="step-temp">
+                        <button class="uk-button uk-button-primary uk-button-small" id="melting-step-set" style="width:165px;">Set temp step (ºC)</button>
+                    </div>
+                    <div class="uk-width-1-2">
+                        <input type="Number" class="uk-input uk-form-width-small" pattern="^[0-9]{1,2}$/" min="5" max="60" placeholder="" id="step-time">
+                        <button class="uk-button uk-button-primary uk-button-small" id="melting-step-time-set" style="width:165px;">Set step time (s)</button>
+                    </div>
+                    <div class="uk-width-1-2" style="margin-bottom: 50px;">
+                        <!-- create a range slider with two inputs -->
+                        <div class="uk-width-1-2" slider id="slider-distance">
+                            <div>
+                              <div inverse-left style="width:70%;"></div>
+                              <div inverse-right style="width:70%;"></div>
+                              <div id="range_bar" class="range_bar" range style="left:30%;right:40%;"></div>
+                              <span thumb style="left:30%;"></span>
+                              <span thumb style="left:60%;"></span>
+                              <div sign style="left:30%;">
+                                <span id="value">50</span>
+                              </div>
+                              <div sign style="left:60%;">
+                                <span id="value">60</span>
+                              </div>
+                            </div>
+                            <input id="left_range" type="range" tabindex="0" value="30" max="100" min="0" step="1"/>
+                            <input id="right_range" type="range" tabindex="0" value="60" max="100" min="0" step="1" />
+                        </div>
+                        <button class="uk-button uk-button-primary uk-button-small" id="melting-range-set" style="width:175px; margin-top: 20px;">Set temp range (ºC)</button>       
+                    </div>
+                </div>
+            </li>
+            <li  class="options" style="visibility: visible;"> <!-- analysis -->
+                <div>
+                    <div class="uk-heading-xsmall" style="margin-bottom: 5px; margin-top: 10px;">Download data</div>
+                    <button class="uk-button uk-button-primary uk-button-small uk-margin-small-top uk-margin-small-bottom" id="download">Raw JSON</button>
+                    <button class="uk-button uk-button-primary uk-button-small uk-margin-small-top uk-margin-small-bottom" id="download_csv">Raw CSV</button>
+                    <button class="uk-button uk-button-primary uk-button-small uk-margin-small-top uk-margin-small-bottom" id="download_chartct">Processed Fluo</button>
+                    <button class="uk-button uk-button-primary uk-button-small uk-margin-small-top uk-margin-small-bottom" id="download_melting">Processed Melting</button>
+
+                    <div class="uk-heading-xsmall" style="margin-bottom: 5px; margin-top: 10px;">Normalization mode</div>
+                    <input type="range" id="sliderNormalization" min="1" max="4" step="1" oninput="updateNormalization()" value="2"><div id="normalizationValue"  style="display: inline-block; margin-left: 10px;">Substract</div>
+                    
+                    <div class="uk-heading-xsmall" style="margin-bottom: 0px; margin-top: 10px;">Range select</div>
+                    <div slider id="slider-ct-range" style="margin-bottom: 50px; width: 40%; margin-top: 15px;">
+                        <div>
+                          <div inverse-left style="width:70%;"></div>
+                          <div inverse-right style="width:70%;"></div>
+                          <div id="range_bar" class="range_bar" range style="left:30%;right:40%;"></div>
+                          <span thumb style="left:30%;"></span>
+                          <span thumb style="left:60%;"></span>
+                          <div sign style="left:30%; visibility: hidden;">
+                            <span id="value">50</span>
+                          </div>
+                          <div sign style="left:60%; visibility: hidden;">
+                            <span id="value">60</span>
+                          </div>
+                        </div>
+                        <input id="left_range_ct" type="range" tabindex="0" value="30" max="100" min="0" step="1"/>
+                        <input id="right_range_ct" type="range" tabindex="0" value="60" max="100" min="0" step="1" />
+                    </div>
+                </div>
+                    <ul class="uk-subnav uk-subnav-pill" uk-switcher>
+                        <li>
+                            <a href="#">Ct values</a>
+                        </li>
+                        <li>
+                            <a href="#">Melting Curve</a>
+                        </li>
+                    </ul>
+                        
+                    <ul class="uk-switcher uk-margin">
+                        <li>
+                            <div class="uk-text-left" uk-grid>
+                                <!-- Ct values analysis -->
+                                <div class="uk-width-1-2">
+                                    <canvas style="margin-top:50px;" id="ct-chart"></canvas>
+                                </div>
+                                <div class="uk-width-1-2">
+                                    <!-- two columns table: "sample", "Ct value". columns with small width -->
+                                    <table class="uk-table uk-table-divider">
+                                        <thead>
+                                            <tr>
+                                                <th class="uk-table-shrink">Sample</th>
+                                                <th class="uk-table-shrink">Ct value</th>
+                                                <th class="uk-table-shrink">Sample</th>
+                                                <th class="uk-table-shrink">Ct value</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ct-table">
+                                        </tbody>
+                                    </table>
+                                </div>               
+                            </div>                 
+                        </li>
+                        <li>
+                            <!-- melting curve analysis -->
+
+                            <div class="uk-heading-xsmall">Mobile average tuning</div>
+                            <div class="uk-text-left" uk-grid>
+                                <div class="uk-width-1-2">
+                                    <!-- include an slider, from 2 to 20 to select the size of the differential matrix. show the numbers -->
+                                    <input type="range" class="uk-range" id="differential-size" min="2" max="100" step="1" value="5">
+                                    <!-- create the canvas for the graph -->
+                                    <canvas style="margin-top:50px; margin-bottom: 50px;" id="melting-chart"></canvas>
+                                </div>
+                                <div class="uk-width-1-2">
+                                    <!-- two columns table: "sample", "Ct value". columns with small width -->
+                                    <table class="uk-table uk-table-divider">
+                                        <thead>
+                                            <tr>
+                                                <th class="uk-table-shrink">Sample</th>
+                                                <th class="uk-table-shrink">Peaks</th>
+                                                <th class="uk-table-shrink">Sample</th>
+                                                <th class="uk-table-shrink">Peaks</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="peaks-table">
+                                        </tbody>
+                                    </table>
+                                </div>    
+                            </div>
+                            
+                        </li>
+                    </ul>
+            </li>
+            <li  class="options" style="visibility: hidden;"> <!-- calibration -->
+                <ul class="uk-subnav uk-subnav-pill" uk-switcher>
+                    <li>
+                        <a href="#">Temperatures</a>
+                    </li>
+                    <li>
+                        <a href="#">Signal</a>
+                    </li>
+                </ul>
+                <ul class="uk-switcher uk-margin">
+                    <li>
+                        <div class="uk-grid">
+                            <div class="uk-width-1-2">
+                                <canvas id="calibration"></canvas>
+                            </div>
+    
+                            <div class="uk-width-1-2">
+                                <!-- Create a uk table with columns "Metal-Resistance", "Chamber-Resistance", "Real-Temp" -->
+                                <table id="calibration-table" class="uk-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Heater-1-Resistance</th>
+                                            <th>Heater-2-Resistance</th>
+                                            <th>Heater-3-Resistance</th>
+                                            <th>Lid-Resistance</th>
+                                            <th>Chamber-Resistance</th>
+                                            <th>Real-Temp</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="calibration_table">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="uk-grid">
+                            <div class="uk-width-1-2  uk-margin-small-bottom">
+                                <input class="uk-input uk-form-width-xsmall " type="Number" pattern="^[0-9]{1,2}$/" placeholder="ºC" id="degreesCalibrate">
+                                <button class="uk-button uk-button-primary uk-button-small" id="calibrate">Calibrate</button>
+                                <button class="uk-button uk-button-primary uk-button-small" id="download_calibration">Download data</button>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="uk-grid">
+                            <!-- On construction (add a mark) -->
+                            <div class="uk-heading-xsmall uk-margin-medium-top">🚧 Under construction  🚧</div>
+                            <!-- draw a table with the 8 LED weights -->
+                            <div class="uk-width-1-2" style="visibility: hidden;">
+                                <button class="uk-button uk-button-primary uk-button-small" id="calibrate_signal">Calibrate</button>
+                                <table id="weights-table" class="uk-table">
+                                    <thead>
+                                        <tr>
+                                            <th>LED-1</th>
+                                            <th>LED-2</th>
+                                            <th>LED-3</th>
+                                            <th>LED-4</th>
+                                            <th>LED-5</th>
+                                            <th>LED-6</th>
+                                            <th>LED-7</th>
+                                            <th>LED-8</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fluorescence_table">
+                                        <!-- add -1 as a default value of the first row-->
+                                        <tr>
+                                            <th>-1</th>
+                                            <th>-1</th>
+                                            <th>-1</th>
+                                            <th>-1</th>
+                                            <th>-1</th>
+                                            <th>-1</th>
+                                            <th>-1</th>
+                                            <th>-1</th> 
+                                        </tr>
+                                    </tbody>
+                                </table>
+                        </div>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+    <script src="data_query.js"></script>
+    <script src="analysis.js"></script>
+</body>
+
+</html>

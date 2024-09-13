@@ -1,0 +1,22 @@
+{
+  "Duplicates": {
+    "samples": {
+      "Neg":["#1E87F0",[0,1]],
+      "Pos":["#FF5579",[2,3]],
+      "Sample 1":["#87ba9d",[4,5]],
+      "Sample 2":["#F5D372",[6,7]]
+    }
+  },
+  "Individual": {
+    "samples": {
+      "Neg":["#1E87F0",[0]],
+      "Pos":["#FF5579",[1]],
+      "Sample 1":["#87ba9d",[2]],
+      "Sample 2":["#F5D372",[3]],
+      "Sample 3":["#AB96D2",[4]],
+      "Sample 4":["#9CA5B5",[5]],
+      "Sample 5":["#F09D6C",[6]],
+      "Sample 6":["#7FD2D1",[7]]
+    }
+  }
+}

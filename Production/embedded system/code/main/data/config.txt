@@ -1,0 +1,12 @@
+{
+	"mDNS":"qlamp",
+	"cycle_time":60000,
+	"debug":"false",
+	"weights":"255.00,255.00,255.00,255.00,255.00,255.00,255.00,255.00",
+	"lid_temp":95,
+	"lid_difference":5,
+	"melting_range":"[0,95]",
+	"melting_step":0.2,
+	"melting_time":10000,
+	"version":2,
+}
