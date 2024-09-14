@@ -559,6 +559,7 @@ void led_n_on (int led_n) {
     FastLED.show();
   } else {
     leds2.setBrightness(led_n,100);
+    Serial.println("LED " + String(led_n) + "on");
   }
 }
 
@@ -596,6 +597,7 @@ void led_n_off (int led_n) {
     FastLED.show();
   } else {
     leds2.setBrightness(led_n,0);
+    Serial.println("LED " + String(led_n) + "off");
   }
 }
 
