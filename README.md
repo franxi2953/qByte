@@ -91,7 +91,7 @@ Note: For any issues or questions, refer to the serial monitor for additional co
       - SPIFFS file system size: Default 4MB with SPIFFS (1.2MB APP/1.5MB SPIFFS).
       - Math library.
 
-5. Download all the libraries included in .zip files of the folder "\open_qLAMP\ESP32\lib" of this repository. In the Arduino IDE, navigate to Sketch > Include Library > Add .ZIP Library. At the top of the drop down list, select the option to "Add .ZIP Library''. See more [detailed instructions here](https://docs.arduino.cc/software/ide-v1/tutorials/installing-libraries/).
+5. Download all the libraries included in .zip files of the folder "[/qByte/Production/embedded%20system/libraries](https://gitlab.com/open-bioeconomy-lab/diagnostics-hardware/rt-lamp-device/-/tree/master/qByte/Production/embedded%20system/libraries?ref_type=heads)" of this repository. In the Arduino IDE, navigate to Sketch > Include Library > Add .ZIP Library. At the top of the drop down list, select the option to "Add .ZIP Library''. See more [detailed instructions here](https://docs.arduino.cc/software/ide-v1/tutorials/installing-libraries/).
 
 6.  Follow the [quick start](#quick-start) section.
 
