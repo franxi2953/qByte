@@ -18,7 +18,7 @@ This is a quick guide to follow if you received an already assembled and program
 
 1. Connect the device to your computer and open the [serial monitor in the Arduino IDE](https://docs.arduino.cc/software/ide-v2/tutorials/ide-v2-serial-monitor/) (other serial monitors should also work). 
 
-2. Ensure that the correct board and COM port are selected. The board is DOIT ESP32 DEVKIT V1. If not using the Arduino IDE it may only be necessary to set the COM port number. If using Windows, you can find the device in [Device Manager](https://www.lifewire.com/device-manager-2625860) > Ports (COM & LPT) as Silicon Labs CP210x USB to UART Bridge. Instructions for other operating systems can be found [here](https://www.mathworks.com/help/matlab/supportpkg/find-arduino-port-on-windows-mac-and-linux.html).
+2. Ensure that the correct board and COM port are selected in the drop down at the top of screen, choose "Select Other Board and Port" if not. The board is DOIT ESP32 DEVKIT V1. If using a serial monitor other the Arduino IDE it may _only_ be necessary to set the COM port number. If using Windows, you can find the device in [Device Manager](https://www.lifewire.com/device-manager-2625860) > Ports (COM & LPT) as Silicon Labs CP210x USB to UART Bridge. Instructions for other operating systems can be found [here](https://www.mathworks.com/help/matlab/supportpkg/find-arduino-port-on-windows-mac-and-linux.html).
 
 3. Check the baud rate. The baud rate of the ESP32-WROOM-32 by Espressif Systems, like most ESP32 devices, is 152000. If you see nonsense in the serial monitor, most likely the baud rate is incorrect. Set it in the right dropdown menu in the serial monitor.
 
