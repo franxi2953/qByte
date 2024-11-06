@@ -78,17 +78,22 @@ Note: For any issues or questions, refer to the serial monitor for additional co
 
 ![Assembly](../Photos/qLAMP%20assembly%20diagram.png)
 
-1) Assembly the device according to the blueprints described in the [components](#Components) section.
-2) Upload the code and the [SPIFFS](https://randomnerdtutorials.com/install-esp32-filesystem-uploader-arduino-ide/) files to the ESP32 using the Arduino IDE. Adjust the following parameters in the tools menu:
-    - Arduino IDE 1.8.12.
-    - ESP32 board manager version 1.0.4.
-    - FastLED library version 3.5.0.
-    - PID_v2 library by Brett Beauregard version 2.0.1.
-    - ArduinoJson library version 6.17.2.
-    - SPIFFS file system size: Default 4MB with SPIFFS (1.2MB APP/1.5MB SPIFFS).
-    - Math library.
-    - All the libraries included in .zip files of the folder "\open_qLAMP\ESP32\lib" of this repository.
-3) Follow the [quick start](#quick-start) section.
+1. Assembly the device according to the blueprints described in the [components](#Components) section.
+
+2. Install the [Arduino IDE](https://www.arduino.cc/en/software) 1.8.1, ready to upload the code and the [SPIFFS](https://randomnerdtutorials.com/install-esp32-filesystem-uploader-arduino-ide/) files to the ESP32.
+
+3. The microcontroller is the ESP32-WROOM-32 by Espressif Systems but it may appear in the IDE as DOIT ESP32 DEVKIT V1. Go to the Tools > Board > Boards Manager menu. A searchable list of installable packages should appear in a sidebar. Install ESP32 by Espressif Systems board manager version 1.0.4.
+
+4. Go to Tools > Library Manager or click the books icon in the sidebar of the IDE. Install the following libraries and versions:
+      - FastLED library version 3.5.0.
+      - PID_v2 library by Brett Beauregard version 2.0.1.
+      - ArduinoJson library version 6.17.2.
+      - SPIFFS file system size: Default 4MB with SPIFFS (1.2MB APP/1.5MB SPIFFS).
+      - Math library.
+
+5. Download all the libraries included in .zip files of the folder "\open_qLAMP\ESP32\lib" of this repository. In the Arduino IDE, navigate to Sketch > Include Library > Add .ZIP Library. At the top of the drop down list, select the option to "Add .ZIP Library''. See more [detailed instructions here](https://docs.arduino.cc/software/ide-v1/tutorials/installing-libraries/).
+
+6.  Follow the [quick start](#quick-start) section.
 
 # Results
 <details>
