@@ -16,10 +16,13 @@ Here we describe the design and mid-scale production of the Open qLAMP, a device
 
 This is a quick guide to follow if you received an already assembled and programmed qLAMP / qByte. For a complete assembly guide please follow the [making the device](#making-the-device) section.
 
-1. Connect the device to your computer and open the serial monitor.
+1. Connect the device to your computer and open the [serial monitor in the Arduino IDE](https://docs.arduino.cc/software/ide-v2/tutorials/ide-v2-serial-monitor/) (other serial monitors should also work). 
 
-2. Configure the device's Wi-Fi by sending the command: wifi "ssid" "password" (including the quotes). The device will restart and connect to a Wi-Fi network. 
-   1. Note: The local network should allow devices to communicate with each other but does not need to be connected to the internet.
+2. Ensure that the correct board and COM port are selected in the drop down at the top of screen, choose "Select Other Board and Port" if not. The board is DOIT ESP32 DEVKIT V1. If using a serial monitor other than the Arduino IDE it may _only_ be necessary to set the COM port number. If using Windows, you can find the COM port number by identifying the device in [Device Manager](https://www.lifewire.com/device-manager-2625860) > Ports (COM & LPT). It will be listed as Silicon Labs CP210x USB to UART Bridge. Instructions for finding the COM port on other operating systems can be found [here](https://www.mathworks.com/help/matlab/supportpkg/find-arduino-port-on-windows-mac-and-linux.html).
+
+3. Check the baud rate. The baud rate of the ESP32-WROOM-32 by Espressif Systems, like most ESP32 devices, is 152000. If you see nonsense in the serial monitor, most likely the baud rate is incorrect. Set it in the right dropdown menu in the serial monitor.
+
+4. Configure the device's Wi-Fi by sending the command: wifi "ssid" "password" (including the quotes) via the serial monitor prompt. The device will restart and connect to a Wi-Fi network. _**Note:** The local network should allow devices to communicate with each other but does not need to be connected to the internet._
 
 3. Connect to the same Wi-Fi network on your computer or mobile device.
 
@@ -78,17 +81,22 @@ Note: For any issues or questions, refer to the serial monitor for additional co
 
 ![Assembly](../Photos/qLAMP%20assembly%20diagram.png)
 
-1) Assembly the device according to the blueprints described in the [components](#Components) section.
-2) Upload the code and the [SPIFFS](https://randomnerdtutorials.com/install-esp32-filesystem-uploader-arduino-ide/) files to the ESP32 using the Arduino IDE. Adjust the following parameters in the tools menu:
-    - Arduino IDE 1.8.12.
-    - ESP32 board manager version 1.0.4.
-    - FastLED library version 3.5.0.
-    - PID_v2 library by Brett Beauregard version 2.0.1.
-    - ArduinoJson library version 6.17.2.
-    - SPIFFS file system size: Default 4MB with SPIFFS (1.2MB APP/1.5MB SPIFFS).
-    - Math library.
-    - All the libraries included in .zip files of the folder "\open_qLAMP\ESP32\lib" of this repository.
-3) Follow the [quick start](#quick-start) section.
+1. Assembly the device according to the blueprints described in the [components](#Components) section.
+
+2. Install the [Arduino IDE](https://www.arduino.cc/en/software) 1.8.1, ready to upload the code and the [SPIFFS](https://randomnerdtutorials.com/install-esp32-filesystem-uploader-arduino-ide/) files to the ESP32.
+
+3. The microcontroller is the ESP32-WROOM-32 by Espressif Systems but it may appear in the IDE as DOIT ESP32 DEVKIT V1. Go to the Tools > Board > Boards Manager menu. A searchable list of installable packages should appear in a sidebar. Install ESP32 by Espressif Systems board manager version 1.0.4.
+
+4. Go to Tools > Library Manager or click the books icon in the sidebar of the IDE. Install the following libraries and versions:
+      - FastLED library version 3.5.0.
+      - PID_v2 library by Brett Beauregard version 2.0.1.
+      - ArduinoJson library version 6.17.2.
+      - SPIFFS file system size: Default 4MB with SPIFFS (1.2MB APP/1.5MB SPIFFS).
+      - Math library.
+
+5. Download all the libraries included in .zip files of the folder "[/qByte/Production/embedded%20system/libraries](https://gitlab.com/open-bioeconomy-lab/diagnostics-hardware/rt-lamp-device/-/tree/master/qByte/Production/embedded%20system/libraries?ref_type=heads)" of this repository. In the Arduino IDE, navigate to Sketch > Include Library > Add .ZIP Library. At the top of the drop down list, select the option to "Add .ZIP Library''. See more [detailed instructions here](https://docs.arduino.cc/software/ide-v1/tutorials/installing-libraries/).
+
+6.  Follow the [quick start](#quick-start) section.
 
 # Results
 <details>
