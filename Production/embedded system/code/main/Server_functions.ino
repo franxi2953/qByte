@@ -607,38 +607,38 @@ String parseVersion(String html) {
   return html.substring(start, end);
 }
 
-void updateSPIFFS() {
-  Serial.println("[INFO] Updating files...");
-  String onlineIndexHtml = fetchFileContent("http://" + UPDATE_SERVER + "/data/index.html");
+// void updateSPIFFS() {
+//   Serial.println("[INFO] Updating files...");
+//   String onlineIndexHtml = fetchFileContent("http://" + UPDATE_SERVER + "/data/index.html");
 
-  File localIndexHtmlFile = SPIFFS.open("/index.html", "r");
-  if (!localIndexHtmlFile) {
-    Serial.println("[ERROR] Failed to open local index.html");
-    return;
-  }
-  String localIndexHtml = localIndexHtmlFile.readString();
-  localIndexHtmlFile.close();
+//   File localIndexHtmlFile = SPIFFS.open("/index.html", "r");
+//   if (!localIndexHtmlFile) {
+//     Serial.println("[ERROR] Failed to open local index.html");
+//     return;
+//   }
+//   String localIndexHtml = localIndexHtmlFile.readString();
+//   localIndexHtmlFile.close();
 
-  String onlineVersion = parseVersion(onlineIndexHtml);
-  String localVersion = parseVersion(localIndexHtml);
+//   String onlineVersion = parseVersion(onlineIndexHtml);
+//   String localVersion = parseVersion(localIndexHtml);
 
-  Serial.println("[INFO] Online version: " + onlineVersion);
-  Serial.println("[INFO] Local version: " + localVersion);
+//   Serial.println("[INFO] Online version: " + onlineVersion);
+//   Serial.println("[INFO] Local version: " + localVersion);
 
-  if (onlineVersion != localVersion) {
-    Serial.println("[INFO] Online version is newer, updating files...");
-    // Online version is newer, fetch file list
-    String fileListJson = fetchFileContent("http://" + UPDATE_SERVER + "/file_list");
-    // Parse the JSON and extract the file list
-    DynamicJsonDocument doc(1024);
-    deserializeJson(doc, fileListJson);
-    JsonArray fileList = doc["files"];
-    // Update each file
-    for (JsonVariant file : fileList) {
-      fetchAndSaveFile("http://" + UPDATE_SERVER + "/data/" + file.as<String>(), "/" + file.as<String>());
-    }
-    Serial.println("[INFO] SPIFFS updated!");
-  } else {
-    Serial.println("Local version is up-to-date, no need to update files.");
-  }
-}
+//   if (onlineVersion != localVersion) {
+//     Serial.println("[INFO] Online version is newer, updating files...");
+//     // Online version is newer, fetch file list
+//     String fileListJson = fetchFileContent("http://" + UPDATE_SERVER + "/file_list");
+//     // Parse the JSON and extract the file list
+//     DynamicJsonDocument doc(1024);
+//     deserializeJson(doc, fileListJson);
+//     JsonArray fileList = doc["files"];
+//     // Update each file
+//     for (JsonVariant file : fileList) {
+//       fetchAndSaveFile("http://" + UPDATE_SERVER + "/data/" + file.as<String>(), "/" + file.as<String>());
+//     }
+//     Serial.println("[INFO] SPIFFS updated!");
+//   } else {
+//     Serial.println("Local version is up-to-date, no need to update files.");
+//   }
+// }

@@ -52,14 +52,14 @@ void serialCommand()
 }
 
 void update () {
-  Serial.println("\n\n[WARNING] STARTING TO UPDATE DO NOT SWITCH OFF THE DEVICE");
-  if(WiFi.status() == WL_CONNECTED){
-    updateSPIFFS();
-    Serial.println("[INFO] File system updated. Proceeding to update firmware...");
-    Serial.println("[INFO] This may take 2-5 minutes. Please do not switch off the device.");
-    esp32FOTA.handle();
-    Serial.println("[INFO] The firmware is up to date!");
-  }
+  // Serial.println("\n\n[WARNING] STARTING TO UPDATE DO NOT SWITCH OFF THE DEVICE");
+  // if(WiFi.status() == WL_CONNECTED){
+  //   updateSPIFFS();
+  //   Serial.println("[INFO] File system updated. Proceeding to update firmware...");
+  //   Serial.println("[INFO] This may take 2-5 minutes. Please do not switch off the device.");
+  //   esp32FOTA.handle();
+  //   Serial.println("[INFO] The firmware is up to date!");
+  // }
 
 }
 

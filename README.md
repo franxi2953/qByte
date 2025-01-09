@@ -85,7 +85,7 @@ Note: For any issues or questions, refer to the serial monitor for additional co
 
 2. Install the [Arduino IDE](https://www.arduino.cc/en/software) 1.8.1, ready to upload the code and the [SPIFFS](https://randomnerdtutorials.com/install-esp32-filesystem-uploader-arduino-ide/) files to the ESP32.
 
-3. The microcontroller is the ESP32-WROOM-32 by Espressif Systems but it may appear in the IDE as DOIT ESP32 DEVKIT V1. Go to the Tools > Board > Boards Manager menu. A searchable list of installable packages should appear in a sidebar. Install ESP32 by Espressif Systems board manager version 1.0.4.
+3. The microcontroller is the ESP32-WROOM-32 by Espressif Systems but it may appear in the IDE as DOIT ESP32 DEVKIT V1. Go to the Tools > Board > Boards Manager menu. A searchable list of installable packages should appear in a sidebar. Install ESP32 by Espressif Systems board manager version 1.0.6.
 
 4. Go to Tools > Library Manager or click the books icon in the sidebar of the IDE. Install the following libraries and versions:
       - FastLED library version 3.5.0.
