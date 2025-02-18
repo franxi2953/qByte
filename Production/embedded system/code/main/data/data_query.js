@@ -112,6 +112,10 @@ runTemp.onclick = function () {
     }
 }
 
+
+var Download_rdml = document.getElementById("download_rdml");
+Download_rdml.onclick = saveProtocolDataRDML;
+
 //save the chart data in a local file
 var Download = document.getElementById("download");
 
