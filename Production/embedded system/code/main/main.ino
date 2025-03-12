@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPmDNS.h>
+#include <esp_task_wdt.h>  
 #include <FastLED.h>
 #include <Wire.h>
 #include <TLC59108.h>
@@ -39,7 +40,7 @@ struct config_t {
   String mDNS = "qLAMP";
   unsigned int CYCLE_TIME = 60000;
   bool DEBUG=true;
-  float WEIGHTS[8] = {255.00,255.00,255.00,255.00,255.00,255.00,255.00,255.00};
+  float WEIGHTS[8] = {100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00};
   int LID_DIFFERENCE = 5;
   int LID_TEMP = 95;
   int MELTING_RANGE[2] = {50,95}; //The temperature at which the melting curve starts. 
@@ -111,6 +112,12 @@ long start_time = 0; //The time when the experiment started.
 int melting_temp; //the variable to store the temperature during the experiment.
 bool last_cycle_melting = false; //Is the last cycle of the experiment a melting curve?
 
+//fluorescence temporal reading
+bool reading_fluorescence = false;
+String fluorescence_values = "";
+
+bool calibrate = false;
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 esp32FOTA esp32FOTA("qbyte", V_SOFTWARE);
@@ -134,6 +141,19 @@ void loop() {
   //keeping the fluorescent reading cycles and data storage
   PerformCycle();
   PerformMelting();
+
+  if (reading_fluorescence)
+  {
+    reading_fluorescence = false;
+    fluorescence_values = runFluorescenceCycle();
+  }
+
+  if (calibrate)
+  {
+    calibrate = false;
+    calibrateFluorescence();
+  }
+
 }
 
 

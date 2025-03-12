@@ -30,12 +30,22 @@ void serialCommand()
     Serial_Version(cmd);
   } else if (cmd.indexOf("update") > -1) {
     update();
+  } else if (cmd.indexOf("calibration") > -1) {
+    Serial_Calibration();
+  } else if (cmd.indexOf("weights") > -1) {
+    Serial.println("\n[INFO] Weights:");
+    for (int i = 0; i < 8; i++)
+    {
+      Serial.println("Well " + String(i+1) + ": " + String(config.WEIGHTS[i]));
+    }
   } else if (cmd.indexOf("baboom") > -1) {
     Serial.println("Baboom!");
   } else {
     Serial.println("\n[Error]Unknown command. Implemented commands:");
     Serial.println("- wifi -> Shows the registered wifi credentials");
     Serial.println("- wifi \"ssid\" \"password\" -> Set new wifi credentials");
+    Serial.println("- calibration -> Perform the calibration of the system");
+    Serial.println("- weights -> Shows the calibration weights of the system");
     Serial.println("- version -> Shows the version of the system");
     Serial.println("- version \"version\" -> Set new version of the system");
     Serial.println("- mDNS -> Shows the mDNS name");
@@ -106,6 +116,13 @@ void Serial_Wifi (String cmd)
       Serial.println("\nWifi is not connected");
     }
   }
+}
+
+void Serial_Calibration () {
+  // Perform the calibration
+  Serial.println("\n[INFO] Calibration started...");
+  calibrateFluorescence();
+  Serial.println("[INFO] Calibration completed.");
 }
 
 void Serial_Send_Data (String cmd) {

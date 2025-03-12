@@ -410,54 +410,33 @@ void saveCredentials (String ssid, String password)
 void PerformCycle()
 {
   // Run if we are above the threshold in time and we have an ongoing experiment
-  if ((millis()-last_cycle_time > config.CYCLE_TIME) && OnGoing)
+  if ((millis() - last_cycle_time > config.CYCLE_TIME) && OnGoing)
   {
     last_cycle_time = millis();
-
-    String fluorescence = ",";
-
-    for (int i = 0; i < 8; i++)
-    {
-      //Background calculation
-      PD_array.setGain(GAIN_SIXTEEN);
-      int value_off = calculate_fluorescence(i)*0.0078125;
-
-      //signal calculation
-      // set the GAIN of each channel
-      float value_on = 32001;
-      led_n_on(i);
-      while (value_on > 32000 && variable_gain[i]<6) //we keep measuring with less adc gain until we reach a value that is not saturated
-      {
-        PD_array.setGain(gain_dict[variable_gain[i]]);
-        value_on = calculate_fluorescence(i);
-        if (value_on > 32000 && variable_gain[i]<6)
-        {
-          variable_gain[i] += 1;
-        }
-      }
-      value_on = value_on*step_dict[variable_gain[i]];
-
-      led_n_off(i);
-      
-      //substract
-      char buffer[50];
-      sprintf(buffer, "%.3f", float(value_on) - float(value_off));
-      fluorescence += String(buffer);
-      fluorescence += ",";
-
-    }
-    String tempe = String(calculate_temperature(WELL1)) + "," + String(calculate_temperature(WELL2)) + "," + String(calculate_temperature(WELL3)) + "," + String(calculate_temperature(LID));
-    String resistance = String(calculate_resistance(WELL1)) + "," + String(calculate_resistance(WELL2)) + "," + String(calculate_resistance(WELL3)) + "," + String(calculate_resistance(LID));
-    String resistance_chamber = "1234";
-    String time_cycle = String( ((long) millis()-start_time) + time_before_interruption);
-    String free_space_SPIFFS = getFreeSpiffsSpacePercentage();
-    String result = time_cycle + "," + heater_goal + fluorescence + tempe + "," + resistance + "," + resistance_chamber + "," + free_space_SPIFFS  + "\n";
+    // Perform the fluorescence cycle
+    String fluorescence = runFluorescenceCycle();
     
-    free_space_SPIFFS.remove(free_space_SPIFFS.length() - 1); //To process the number to a float later on
+    String tempe = String(calculate_temperature(WELL1)) + "," +
+                   String(calculate_temperature(WELL2)) + "," +
+                   String(calculate_temperature(WELL3)) + "," +
+                   String(calculate_temperature(LID));
+    String resistance = String(calculate_resistance(WELL1)) + "," +
+                        String(calculate_resistance(WELL2)) + "," +
+                        String(calculate_resistance(WELL3)) + "," +
+                        String(calculate_resistance(LID));
+    String resistance_chamber = "1234";
+    String time_cycle = String(((long)millis() - start_time) + time_before_interruption);
+    String free_space_SPIFFS = getFreeSpiffsSpacePercentage();
+    String result = time_cycle + "," + heater_goal + fluorescence + tempe + "," + resistance + "," + resistance_chamber + "," + free_space_SPIFFS + "\n";
+    
+    // Process free_space_SPIFFS string to float (remove the trailing "%" if needed)
+    free_space_SPIFFS.remove(free_space_SPIFFS.length() - 1);
     float free_space = free_space_SPIFFS.toFloat();
-    // store result in SPIFFS
-    File file = SPIFFS.open("/last_run.txt", "a+");
+    Serial.print("[DEBUG] Free space on SPIFFS: ");
     Serial.println(free_space);
+    
+    // Store result in SPIFFS
+    File file = SPIFFS.open("/last_run.txt", "a+");
     if (file && free_space >= 5) {
       file.print(result);
       file.close();
@@ -465,7 +444,7 @@ void PerformCycle()
     } else {
       Serial.println("[INFO] New cycle performed but NOT stored :(.");
     }
-  }  
+  }
 }
 
 void PerformMelting() {
@@ -493,6 +472,192 @@ void PerformMelting() {
       PWM_PID_LID.Start(calculate_temperature(LID),PWM_PID_LID.Run(config.LID_TEMP),config.LID_TEMP);
     } else {
       _StopMelting();
+    }
+  }
+}
+
+String runFluorescenceCycle() {
+  String fluorescence = ",";
+  for (int i = 0; i < 8; i++) {
+    // Reset the variable gain for the current channel
+    variable_gain[i] = 0;
+    
+    // Background calculation
+    PD_array.setGain(GAIN_SIXTEEN);
+    int raw_background = calculate_fluorescence(i);
+    int value_off = raw_background * 0.0078125;
+    
+    // Signal calculation
+    float value_on = 32001; // initial value to ensure loop entry
+    led_n_on(i);
+    
+    int iterations = 0;
+    while (value_on > 32000 && variable_gain[i] < 6 && iterations < 10) {
+      PD_array.setGain(gain_dict[variable_gain[i]]);
+      value_on = calculate_fluorescence(i);
+      if (value_on > 32000 && variable_gain[i] < 6) {
+        variable_gain[i] += 1;
+      }
+      iterations++;
+    }
+    
+    // Convert value_on to mV using step factor corresponding to the current gain
+    float value_on_converted = value_on * step_dict[variable_gain[i]];
+    
+    // Turn LED off
+    led_n_off(i);
+    
+    // Subtract background from signal and append to the fluorescence string
+    float fluorescence_value = value_on_converted - value_off;
+    char buffer[50];
+    sprintf(buffer, "%.3f", fluorescence_value);
+    fluorescence += String(buffer);
+    fluorescence += ",";
+  }
+
+  // Return the assembled fluorescence string.
+  return fluorescence;
+}
+
+void calibrateFluorescence() {
+  const int maxIterations = 10;           // Maximum number of calibration iterations
+  const float learningRate = 0.5;           // Fraction of the difference to adjust per iteration
+  const float convergenceThreshold = 0.05;   // When max weight change is below this, calibration is complete
+
+  Serial.println("[INFO] Calibration started...");
+
+  // --- Step 1: Reset all channel weights to 100 ---
+  for (int i = 0; i < 8; i++) {
+    config.WEIGHTS[i] = 100.0;
+  }
+
+  // --- Step 2: Determine the reference channel from an initial measurement ---
+  String initialStr = runFluorescenceCycle();
+  int initialValues[8];
+  int start = 0;
+  if (initialStr.charAt(0) == ',') {
+    start = 1; // Skip the initial comma
+  }
+  for (int i = 0; i < 8; i++) {
+    int commaIndex = initialStr.indexOf(',', start);
+    if (commaIndex == -1) break;
+    String token = initialStr.substring(start, commaIndex);
+    initialValues[i] = token.toInt();
+    start = commaIndex + 1;
+  }
+  
+  // Find the channel with the lowest fluorescence reading (this will be our reference)
+  int refChannel = 0;
+  int minFluorescence = initialValues[0];
+  for (int i = 1; i < 8; i++) {
+    if (initialValues[i] < minFluorescence) {
+      minFluorescence = initialValues[i];
+      refChannel = i;
+    }
+  }
+  Serial.print("[DEBUG] Reference channel determined: ");
+  Serial.print(refChannel);
+  Serial.print(" with initial value: ");
+  Serial.println(minFluorescence);
+
+  // --- Step 3: Iterative calibration loop ---
+  for (int iter = 0; iter < maxIterations; iter++) {
+    // Take two measurements in this iteration and average them.
+    int values1[8], values2[8], avgValues[8];
+    
+    // --- First measurement ---
+    String fluorescenceStr1 = runFluorescenceCycle();
+    start = 0;
+    if (fluorescenceStr1.charAt(0) == ',') { start = 1; }
+    for (int i = 0; i < 8; i++) {
+      int commaIndex = fluorescenceStr1.indexOf(',', start);
+      if (commaIndex == -1) break;
+      String token = fluorescenceStr1.substring(start, commaIndex);
+      values1[i] = token.toInt();
+      start = commaIndex + 1;
+    }
+    
+    // --- Second measurement ---
+    String fluorescenceStr2 = runFluorescenceCycle();
+    start = 0;
+    if (fluorescenceStr2.charAt(0) == ',') { start = 1; }
+    for (int i = 0; i < 8; i++) {
+      int commaIndex = fluorescenceStr2.indexOf(',', start);
+      if (commaIndex == -1) break;
+      String token = fluorescenceStr2.substring(start, commaIndex);
+      values2[i] = token.toInt();
+      start = commaIndex + 1;
+    }
+    
+    // Compute the average reading for each channel
+    for (int i = 0; i < 8; i++) {
+      avgValues[i] = (values1[i] + values2[i]) / 2;
+    }
+    
+    // Debug: print the averaged readings
+    Serial.print("[DEBUG] Iteration ");
+    Serial.print(iter);
+    Serial.print(" averaged readings: ");
+    for (int i = 0; i < 8; i++) {
+      Serial.print(avgValues[i]);
+      Serial.print(" ");
+    }
+    Serial.println();
+
+    // Get the reference channel's averaged fluorescence reading.
+    int refFluorescence = avgValues[refChannel];
+    Serial.print("[DEBUG] Reference channel (");
+    Serial.print(refChannel);
+    Serial.print(") reading: ");
+    Serial.println(refFluorescence);
+
+    // --- Step 4: Update weights gradually based on the current weight ---
+    // For channel j, we assume its current measurement is influenced by its current weight W.
+    // To have its fluorescence match the reference (with weight 100), the ideal weight should be:
+    //      idealWeight = W * (refFluorescence / avgValues[j])
+    // We then update gradually.
+    float maxChange = 0.0;
+    for (int j = 0; j < 8; j++) {
+      float idealWeight;
+      if (j == refChannel) {
+        // For the reference channel, we always keep the weight at 100.
+        idealWeight = 100.0;
+      } else {
+        if (avgValues[j] != 0) {
+          idealWeight = config.WEIGHTS[j] * ((float)refFluorescence / (float)avgValues[j]);
+        } else {
+          idealWeight = config.WEIGHTS[j]; // no update if reading is zero
+        }
+        // Clamp to a maximum of 100.
+        if (idealWeight > 100.0) {
+          idealWeight = 100.0;
+        }
+      }
+      float oldWeight = config.WEIGHTS[j];
+      float newWeight = oldWeight + learningRate * (idealWeight - oldWeight);
+      config.WEIGHTS[j] = newWeight;
+      float change = fabs(newWeight - oldWeight);
+      if (change > maxChange) {
+        maxChange = change;
+      }
+      Serial.print("[DEBUG] Channel ");
+      Serial.print(j);
+      Serial.print(" ideal: ");
+      Serial.print(idealWeight, 2);
+      Serial.print(", updated weight: ");
+      Serial.println(newWeight, 2);
+    }
+    Serial.print("[DEBUG] Max weight change this iteration: ");
+    Serial.println(maxChange, 2);
+    
+    // Save the new configuration so the changes take effect.
+    saveConfig();
+    delay(100); // Allow time for new weights to affect LED emission
+    
+    // Check for convergence: if the maximum weight change is small, stop iterating.
+    if (maxChange < convergenceThreshold) {
+      Serial.println("[DEBUG] Calibration complete: weights have converged.");
+      break;
     }
   }
 }
@@ -558,8 +723,7 @@ void led_n_on (int led_n) {
     }
     FastLED.show();
   } else {
-    leds2.setBrightness(led_n,100);
-    Serial.println("LED " + String(led_n) + "on");
+    leds2.setBrightness(led_n,config.WEIGHTS[led_n]);
   }
 }
 
@@ -597,7 +761,6 @@ void led_n_off (int led_n) {
     FastLED.show();
   } else {
     leds2.setBrightness(led_n,0);
-    Serial.println("LED " + String(led_n) + "off");
   }
 }
 

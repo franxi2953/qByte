@@ -399,22 +399,7 @@ function set_cycle_time() {
     }
 }
 
-// calibrate the led weights ON CONSTRUCTION
-function calibrate_signal() {
-    // Inactivate the button
-    document.getElementById("calibrate_signal").disabled = true;
-    // show a spinner
-    document.getElementById("calibrate_signal").innerHTML = '<span uk-spinner></span> Calibrating...';
-    var xhttp = new XMLHttpRequest();
-    xhttp.open("GET", "/calibrate_signal", true);
-    xhttp.send();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            var answer = this.responseText
-            console.log(answer)
-        }
-    }
-}
+
 
 // handle the click of lid-temp-set button
 function set_lid_temp() {
@@ -1442,8 +1427,6 @@ function isProtocolOngoing() {
                     }
                 }
             }
-
-            document.getElementById("calibrate_signal").onclick = calibrate_signal;
 
             // ask for the lid_temp
             var xhttp_4 = new XMLHttpRequest();

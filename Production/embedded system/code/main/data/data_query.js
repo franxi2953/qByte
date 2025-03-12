@@ -140,10 +140,104 @@ Download_melting.onclick = saveMeltingChartCSV;
 var calibration_button = document.getElementById("calibrate");
 calibration_button.onclick = addCalibrationInfo;
 
-
 //Dowload the data of the calibration_table as a JSON file
 var Download_calibration = document.getElementById("download_calibration");
 Download_calibration.onclick = saveCalibrationData;
+
+document.getElementById("calibrate_signal").onclick = function() {
+    let calibrateButton = this;
+    // Disable button and show spinner.
+    calibrateButton.disabled = true;
+    calibrateButton.innerHTML = '<span uk-spinner></span> Calibrating...';
+
+    // Step 1: Retrieve initial fluorescence from /fluo.
+    let xhrInitial = new XMLHttpRequest();
+    xhrInitial.open("GET", "/ReadFluo", true);
+    xhrInitial.send();
+    xhrInitial.onreadystatechange = function() {
+        if (xhrInitial.readyState === 4 && xhrInitial.status === 200) {
+            // cycle of reading the data happening. Wait for the data to be ready
+            // wait 5 seconds
+            setTimeout(function () {
+                // now ask for the values in the endpoint /fluo
+                let xhr = new XMLHttpRequest();
+                xhr.open("GET", "/fluo", true);
+                xhr.send();
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        let response = xhr.responseText;
+                        let values = parseCSVResponse(response);
+                        // Update the initial fluorescence chart.
+                        for (let i = 0; i < values.length; i++) {
+                            initialSignalFluoChart.data.datasets[0].data[i] = values[i];
+                        }
+                        initialSignalFluoChart.update();
+
+                        // now launch the calibration
+                        let xhrCalibrate = new XMLHttpRequest();
+                        xhrCalibrate.open("GET", "/Calibration", true);
+                        xhrCalibrate.send();
+                        xhrCalibrate.onreadystatechange = function() {
+                            if (xhrCalibrate.readyState === 4 && xhrCalibrate.status === 200) {
+
+                                // wait 60 seconds
+                                setTimeout(function () {
+                                    // ask for the weights at "/readWeights"
+                                    let xhrWeights = new XMLHttpRequest();
+                                    xhrWeights.open("GET", "/readWeights", true);
+                                    xhrWeights.send();
+                                    xhrWeights.onreadystatechange = function() {
+                                        if (xhrWeights.readyState === 4 && xhrWeights.status === 200) {
+                                            let response = xhrWeights.responseText;
+                                            let values = parseCalibrationResponse(response);
+                                            // Update the final LED weights chart.
+                                            for (let i = 0; i < values.length; i++) {
+                                                finalSignalWeightsChart.data.datasets[0].data[i] = values[i];
+                                            }
+                                            finalSignalWeightsChart.update();
+                                        }
+
+                                        // now read the fluorescence data again
+                                        let xhrPost = new XMLHttpRequest();
+                                        xhrPost.open("GET", "/ReadFluo", true);
+                                        xhrPost.send();
+                                        xhrPost.onreadystatechange = function() {
+                                            if (xhrPost.readyState === 4 && xhrPost.status === 200) {
+                                                // cycle of reading the data happening. Wait for the data to be ready
+                                                // wait 5 seconds
+                                                setTimeout(function () {
+                                                    // now ask for the values in the endpoint /fluo
+                                                    let xhr = new XMLHttpRequest();
+                                                    xhr.open("GET", "/fluo", true);
+                                                    xhr.send();
+                                                    xhr.onreadystatechange = function() {
+                                                        if (xhr.readyState === 4 && xhr.status === 200) {
+                                                            let response = xhr.responseText;
+                                                            let values = parseCSVResponse(response);
+                                                            // Update the post-calibration fluorescence chart.
+                                                            for (let i = 0; i < values.length; i++) {
+                                                                postSignalFluoChart.data.datasets[0].data[i] = values[i];
+                                                            }
+                                                            postSignalFluoChart.update();
+                                                        }
+                                                    }
+                                                    // restore the button
+                                                    calibrateButton.disabled = false;
+                                                    calibrateButton.innerHTML = "Calibrate Signal";
+                                                }, 10000);
+                                            }
+                                        };
+                                    }
+                                }, 60000);
+                            }
+                        };
+
+                    }
+                }
+            }, 10000);
+        }
+    }
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////CHART DATA STRUCTURES/////////////////////////////////////////
@@ -280,6 +374,106 @@ options: {
 }
 };
 
+// Vertical bar chart for initial fluorescence.
+const signalFluo_data = {
+    labels: ['PD1', 'PD2', 'PD3', 'PD4', 'PD5', 'PD6', 'PD7', 'PD8'],
+    datasets: [{
+        label: 'Initial Signal Fluorescence',
+        data: [],
+        backgroundColor: "#FF5579",
+        borderColor: "#FF5579"
+    }]
+};
+
+const signalFluo_config = {
+    type: 'bar',
+    data: signalFluo_data,
+    options: {
+        scales: {
+            x: {
+                grid: { display: false }  // disable grid lines on x-axis
+            },
+            y: {
+                beginAtZero: true,
+                grid: { display: false }  // disable grid lines on y-axis
+            }
+        },
+        animation: false,
+        plugins: {
+            legend: { display: true },
+            tooltips: { enabled: false }
+        }
+    }
+};
+
+
+// Horizontal bar chart for final LED weights.
+const signalWeights_data = {
+    labels: ['LED1', 'LED2', 'LED3', 'LED4', 'LED5', 'LED6', 'LED7', 'LED8'],
+    datasets: [{
+        label: 'Final Signal Weights (%)',
+        data: [],
+        backgroundColor: "#1E87F0",
+        borderColor: "#1E87F0"
+    }]
+};
+
+const signalWeights_config = {
+    type: 'bar',
+    data: signalWeights_data,
+    options: {
+        indexAxis: 'y',
+        scales: {
+            x: {
+                beginAtZero: true,
+                max: 100,
+                grid: { display: false }
+            },
+            y: {
+                grid: { display: false }
+            }
+        },
+        animation: false,
+        plugins: {
+            legend: { display: true },
+            tooltips: { enabled: false }
+        }
+    }
+};
+
+
+// Vertical bar chart for post-calibration fluorescence.
+const postSignalFluo_data = {
+    labels: ['PD1', 'PD2', 'PD3', 'PD4', 'PD5', 'PD6', 'PD7', 'PD8'],
+    datasets: [{
+        label: 'Post Calibration Fluorescence',
+        data: [],
+        backgroundColor: "#FF5579",
+        borderColor: "#FF5579"
+    }]
+};
+
+const postSignalFluo_config = {
+    type: 'bar',
+    data: postSignalFluo_data,
+    options: {
+        scales: {
+            x: {
+                grid: { display: false }  // disable grid lines on x-axis
+            },
+            y: {
+                beginAtZero: true,
+                grid: { display: false }  // disable grid lines on y-axis
+            }
+        },
+        animation: false,
+        plugins: {
+            legend: { display: true },
+            tooltips: { enabled: false }
+        }
+    }
+};
+
 
 const fluo_chart = new Chart(
 document.getElementById('fluorescence'),
@@ -289,14 +483,46 @@ fluo_config
 window.chart = fluo_chart;
 
 const temp_chart = new Chart(
-document.getElementById('temperature'),
-temp_config
-);
-const calibration_chart = new Chart(
-document.getElementById('calibration'),
-calibration_config
-);
+    document.getElementById('temperature'),
+    temp_config
+    );
 
+const calibration_chart = new Chart(
+    document.getElementById('calibration'),
+    calibration_config
+    );
+
+const initialSignalFluoChart = new Chart(
+    document.getElementById('initialFluorescenceChart'),
+    signalFluo_config
+    );
+
+const finalSignalWeightsChart = new Chart(
+    document.getElementById('finalWeightsChart'), 
+    signalWeights_config
+    );
+
+const postSignalFluoChart = new Chart(
+    document.getElementById('postFluorescenceChart'),
+     postSignalFluo_config
+    );
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+// Helper Functions
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+function parseCSVResponse(response) {
+    return response.split(",")
+                   .filter(item => item.trim() !== "")
+                   .map(Number);
+}
+
+// Helper: Parse the calibration response (expected format: "[OK],w1,w2,...,w8") into an array of numbers.
+function parseCalibrationResponse(response) {
+    let parts = response.split(",").filter(item => item.trim() !== "");
+    parts.shift(); // Remove the "[OK]" element.
+    return parts.map(Number);
+}
 
 
 

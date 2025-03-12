@@ -55,11 +55,14 @@ void connect_wifi(int time_trying) {
       Serial.println(WiFi.subnetMask());
 
       server.on("/", [](AsyncWebServerRequest *request) {loadFromSPIFFS("/index.html", request);});
+      server.on("/Calibration", _Calibration);
+      server.on("/readWeights", _readWeights);
       server.on("/OnGoing", experimentOnGoing);
       server.on("/Run", _Run);
       server.on("/RunMelting", _RunMelting);
       server.on("/Stop", _Stop);
       server.on("/temp", SendTemp);
+      server.on("/ReadFluo", _ReadFluo);
       server.on("/fluo", SendFluo);
       server.on("/res", SendResistance);    
       server.on("/led_trial", led_trial); 
@@ -74,7 +77,6 @@ void connect_wifi(int time_trying) {
       server.on("/melting_step", _melting_step);
       server.on("/melting_range", _melting_range);
       server.on("/melting_time", _melting_time);
-      server.on("/calibrate_signal", signal_calibration); //Under construction
       server.on("/protocols", protocol_library);
       server.on("/variable_gains", _variable_gains); 
       server.on("/free_memory", _free_memory); 
@@ -141,6 +143,27 @@ void experimentOnGoing(AsyncWebServerRequest *request) {
   } else {
     request->send(200, "text/plain", "0");
   }
+}
+
+void _Calibration(AsyncWebServerRequest *request) {
+  Serial.println("[INFO] Calibration requested.");
+  // Call the calibration function. This may take some time (e.g. one minute).
+  calibrate = true;
+  
+  request->send(200, "text/plain", "[OK] CALIBRATION STARTED");
+  Serial.println("[INFO] Calibration data sent.");
+}
+
+void _readWeights(AsyncWebServerRequest *request) {
+  Serial.println("[INFO] Weights requested.");
+  // return the weights as a string
+  String result = "";
+  for (int i = 0; i < 7; i++)
+  {
+    result += String(config.WEIGHTS[i]) + ",";
+  }
+  result += String(config.WEIGHTS[7]);
+  request->send(200, "text/plain", result);
 }
 
 void _Run(AsyncWebServerRequest *request){
@@ -266,18 +289,15 @@ void SendTemp(AsyncWebServerRequest *request)
   Serial.println("[INFO] Temperature requested and sent.");
 }
 
+void _ReadFluo(AsyncWebServerRequest *request)
+{
+  reading_fluorescence = true;
+  request->send(200, "text/plain", "[OK] READING FLUORESCENCE");
+}
+
 void SendFluo (AsyncWebServerRequest *request)
 {
-  String buff = "";
-  for (int i = 0; i <8; i++)
-  {
-    int value_off = calculate_fluorescence(i);
-    led_n_on(i);
-    int value_on = calculate_fluorescence(i);
-    led_n_off(i);
-    buff += String(value_on - value_off) + ",";
-  }
-  request->send(200, "text/plain", buff);
+  request->send(200, "text/plain", fluorescence_values);
   Serial.println("[INFO] Fluorescence requested and sent.");
 }
 
@@ -470,75 +490,6 @@ void protocol_library (AsyncWebServerRequest *request) {
   } 
 }
 
-void signal_calibration (AsyncWebServerRequest *request) {
-  // If there's a protcol running, send an error
-  if (OnGoing) {
-    request->send(200, "text/plain", "[ERROR] CAN'T START CALIBRATION, PROTOCOL RUNNING");
-  } else {
-    // If there's no protocol running, start the calibration
-    
-    float buff[8];
-
-    for (int i = 0; i < 8; i++) {
-      
-      //take 10 samples and do the mean
-      int mean = 0;
-      for (int j = 0; j < 5; j++) {
-        int value_off = calculate_fluorescence(i); 
-        led_n_on(i);
-        delay(10);
-        int value_on = calculate_fluorescence(i);
-        led_n_off(i);
-        mean += value_on - value_off;
-      }
-      mean = mean / 5;
-      buff[i] = mean;
-
-      //check the position of the smaller
-      int min = 0;
-      for (int i = 0; i < 8; i++) {
-        if (buff[i] < buff[min]) {
-          min = i;
-        }
-      }
-
-      for (int i = 0; i < 8; i++) {
-        while (buff[i] > buff[min] && i != min) {
-          config.WEIGHTS[i] = config.WEIGHTS[i] - 1;
-          int mean = 0;
-          int passes = 0;
-          for (int j = 0; j < 5; j++,passes++) {
-            int value_off = calculate_fluorescence(i); 
-            led_n_on(i);
-            delay(10);
-            int value_on = calculate_fluorescence(i);
-            led_n_off(i);
-            int value = value_on - value_off;
-            if (value - buff[min] > 100) {
-              j=10;
-            }
-            mean += value;
-          }
-          mean = mean / passes;
-          buff[i] = mean;
-          led_n_off(i);
-        }
-      }
-
-      saveConfig();
-
-      //send the weights to the websocket
-      String result = "";
-      for (int i = 0; i < 7; i++)
-      {
-        result += String(config.WEIGHTS[i]) + ",";
-      }
-      result += String(config.WEIGHTS[7]);
-      request->send(200, "text/plain", result);
-    }
-  }
-}
-
 void _variable_gains (AsyncWebServerRequest *request) {
   String answer = String(variable_gain[0]);
   for (int i = 1; i<8; i++)
@@ -596,7 +547,6 @@ void fetchAndSaveFile(String url, String localPath) {
   }
   file.close();
 }
-
 
 String parseVersion(String html) {
   int start = html.indexOf("<!-- Version: ") + 14;

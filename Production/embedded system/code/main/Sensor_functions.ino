@@ -1,7 +1,5 @@
 float calculate_fluorescence (int well_n)
 {
-  
-
   // no interrupt during the measurement
   float fluo_pd = 0;
   
@@ -61,7 +59,7 @@ float calculate_fluorescence (int well_n)
           digitalWrite(SW1, LOW);
           digitalWrite(SW2, LOW);
           digitalWrite(SW3, LOW);
-          delay(50);
+          delay(5);
           // read the adc value
           fluo_pd = PD_array.readADC_SingleEnded(1);
 
@@ -71,7 +69,7 @@ float calculate_fluorescence (int well_n)
           digitalWrite(SW1, HIGH);
           digitalWrite(SW2, LOW);
           digitalWrite(SW3, LOW);
-          delay(50);
+          delay(5);
           // read the adc value
           fluo_pd = PD_array.readADC_SingleEnded(1);
           break;
@@ -80,7 +78,7 @@ float calculate_fluorescence (int well_n)
           digitalWrite(SW1, LOW);
           digitalWrite(SW2, HIGH);
           digitalWrite(SW3, LOW);
-          delay(50);
+          delay(5);
           // read the adc value
           fluo_pd = PD_array.readADC_SingleEnded(1);
           break;
@@ -89,7 +87,7 @@ float calculate_fluorescence (int well_n)
           digitalWrite(SW1, HIGH);
           digitalWrite(SW2, HIGH);
           digitalWrite(SW3, LOW);
-          delay(50);
+          delay(5);
           // read the adc value
           fluo_pd = PD_array.readADC_SingleEnded(1);
           break;
@@ -98,7 +96,7 @@ float calculate_fluorescence (int well_n)
           digitalWrite(SW1, LOW);
           digitalWrite(SW2, LOW);
           digitalWrite(SW3, HIGH);
-          delay(50);
+          delay(5);
           // read the adc value
           fluo_pd = PD_array.readADC_SingleEnded(1);
           break;
@@ -107,7 +105,7 @@ float calculate_fluorescence (int well_n)
           digitalWrite(SW1, HIGH);
           digitalWrite(SW2, LOW);
           digitalWrite(SW3, HIGH);
-          delay(50);
+          delay(5);
           // read the adc value
           fluo_pd = PD_array.readADC_SingleEnded(1);
           break;
@@ -116,7 +114,7 @@ float calculate_fluorescence (int well_n)
           digitalWrite(SW1, LOW);
           digitalWrite(SW2, HIGH);
           digitalWrite(SW3, HIGH);
-          delay(50);
+          delay(5);
           // read the adc value
           fluo_pd = PD_array.readADC_SingleEnded(1);
           break;
@@ -125,7 +123,7 @@ float calculate_fluorescence (int well_n)
           digitalWrite(SW1, HIGH);
           digitalWrite(SW2, HIGH);
           digitalWrite(SW3, HIGH);
-          delay(50);
+          delay(5);
           // read the adc value
           fluo_pd = PD_array.readADC_SingleEnded(1);
           break;
