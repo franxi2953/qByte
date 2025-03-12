@@ -660,6 +660,45 @@ function saveProtocolDataCSV() {
     saveAs(blob, "data.csv");
 }
 
+function saveProtocolDataRDML() {
+    // Build an RDML-compliant XML string using fluorescence data (assumed to be in real_data.datasets indices 5 to 12)
+    var xmlStr = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xmlStr += '<rdml version="1.1" xmlns="http://www.rdml.org">\n';
+    xmlStr += '  <experimenter id="exp1">\n';
+    xmlStr += '    <name>Default Experimenter</name>\n';
+    xmlStr += '  </experimenter>\n';
+    xmlStr += '  <documentation>\n';
+    xmlStr += '    <date>' + new Date().toISOString().split("T")[0] + '</date>\n';
+    xmlStr += '    <notes>Data exported from qByte device</notes>\n';
+    xmlStr += '  </documentation>\n';
+    xmlStr += '  <thermalCyclingConditions id="tc1">\n';
+    xmlStr += '    <description>Default cycling conditions</description>\n';
+    xmlStr += '  </thermalCyclingConditions>\n';
+    xmlStr += '  <experiment id="exp1">\n';
+    xmlStr += '    <run id="run1">\n';
+    
+    // Loop over 8 fluorescence channels (channels 0 to 7 mapped to datasets indices 5-12)
+    for (var ch = 0; ch < 8; ch++) {
+        xmlStr += '      <react id="r' + (ch + 1) + '" sample="s' + (ch + 1) + '" target="t1">\n';
+        // For each cycle/time point in the dataset
+        for (var i = 0; i < real_data.labels.length; i++) {
+            // Use the index as the cycle number; adjust if real_data.labels stores cycle info differently.
+            var cycle = i;
+            var fluoValue = real_data.datasets[ch + 5].data[i];
+            xmlStr += '        <adp cyc="' + cycle + '">' + fluoValue + '</adp>\n';
+        }
+        xmlStr += '      </react>\n';
+    }
+    
+    xmlStr += '    </run>\n';
+    xmlStr += '  </experiment>\n';
+    xmlStr += '</rdml>';
+    
+    // Create a Blob from the XML string and trigger the download as an .rdml file
+    var blob = new Blob([xmlStr], { type: "application/xml;charset=utf-8" });
+    saveAs(blob, "data.rdml");
+}
+
 function saveChartCtCSV() {
     //Join the data from chart_ct
     var data_csv = "Time,";
