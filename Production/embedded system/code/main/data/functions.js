@@ -229,7 +229,6 @@ function updateGraphsAfterSimplifyChange(isSimplified) {
 }
 
 
-
 //simplifyData needs the transposed data as the function was created to simplify incoming .csv data
 function transpose(array) {
     return array[0].map((_, colIndex) => array.map(row => row[colIndex]));
@@ -932,10 +931,18 @@ var palette = ["#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", 
 
 var selected_sample = "Empty";
 
+// Functions for protocol management
+
+// Function to save the current protocol setup to the device
+
+
 window.onload = function () {
     // --------------------------------------- EXPERIMENT DESIGN DRAWINGS ---------------------------------------
     //draw in the canvas 8 circles in line
     var tubes_canvas = document.getElementById("tubes");
+    
+    // Add event listener for the save protocol button
+    document.getElementById("save-protocol").addEventListener("click", saveCurrentProtocol);
     function drawCircles() {
         var ctx = tubes_canvas.getContext("2d");
         //draw the circles, if the mouse is over the circle, change the color
@@ -1327,27 +1334,36 @@ window.onload = function () {
             update_protocol_list();
         }
     }
-
-    function update_protocol_list ()
-    {
+    // Define update_protocol_list inside window.onload
+    function update_protocol_list() {
         // for each element of the protocols_library, add a the name of the protocol in the <tbody id="protocol_library">
         var protocol_library_html = document.getElementById("protocol_library");
+        if (!protocol_library_html) return; // Add null check
+        
         // clean the table
-        while (protocol_library_html.rows.length > 1) {
-            protocol_library_html.deleteRow(1);
+        while (protocol_library_html.rows.length > 0) {
+            protocol_library_html.deleteRow(0);
         }
 
         for (var i = 0; i < Object.keys(protocols_library).length; i++) {
             var row = protocol_library_html.insertRow(protocol_library_html.rows.length);
             var cell1 = row.insertCell(0);
+            var cell2 = row.insertCell(1);
 
             cell1.innerHTML = Object.keys(protocols_library)[i];
-            // when a user click on a protocol, go over the "samples" element
+            cell2.innerHTML = "<a style=\"text-decoration: none;\">🗑️</a>";
+            cell2.style.width = "30px";
+            cell2.style.textAlign = "center";
+            
+            // when a user clicks on a protocol name, load that protocol
             cell1.onclick = ((index) => () => manage_protocol_click(Object.keys(protocols_library)[index]))(i);
+            
+            // when a user clicks on the delete icon, delete that protocol
+            cell2.onclick = ((index) => () => deleteProtocol(Object.keys(protocols_library)[index]))(i);
         }
     }
 
-    function manage_protocol_click (name) {
+    function manage_protocol_click(name) {
         for (var j=0; j< Object.keys(protocols_library[name]["samples"]).length; j++)
         {
             //  in protocols_library[i]["samples"] are the different samples. 
@@ -1388,6 +1404,88 @@ window.onload = function () {
             drawCircles();
             updateSampleTable();
         }
+    }
+
+    function saveCurrentProtocol() {
+        // Get the protocol name from the input field
+        var protocolName = document.getElementById("protocol-name").value.trim();
+        
+        // Validate protocol name
+        if (!protocolName) {
+            alert("Please enter a protocol name");
+            return;
+        }
+        
+        // Check if protocol name already exists
+        if (protocols_library[protocolName] && !confirm("A protocol with this name already exists. Do you want to overwrite it?")) {
+            return;
+        }
+        
+        // Create protocol data structure
+        var protocolData = {
+            "samples": {}
+        };
+        
+        // Add all non-empty sample types to the protocol
+        for (var sampleName in sample_types) {
+            if (sampleName !== "Empty") {
+                // Get the tubes that have this sample type
+                var tubeIndices = [];
+                for (var i = 0; i < 8; i++) {
+                    if (tube_ids[i] === sampleName) {
+                        tubeIndices.push(i);
+                    }
+                }
+                
+                // Only add the sample if it's assigned to at least one tube
+                if (tubeIndices.length > 0) {
+                    protocolData.samples[sampleName] = [sample_types[sampleName], tubeIndices];
+                }
+            }
+        }
+        
+        // Send the protocol data to the server
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", "/protocols?save_new=1&name=" + encodeURIComponent(protocolName) + "&protocol_data=" + encodeURIComponent(JSON.stringify(protocolData)), true);
+        xhttp.send();
+        
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4) {
+                if (this.status == 200) {
+                    // Update the protocols library
+                    protocols_library[protocolName] = protocolData;
+                    update_protocol_list();
+                    document.getElementById("protocol-name").value = "";
+                    alert("Protocol saved successfully");
+                } else {
+                    alert("Error saving protocol: " + this.responseText);
+                }
+            }
+        };
+    }
+    
+    // Function to delete a protocol
+    function deleteProtocol(protocolName) {
+        if (!confirm("Are you sure you want to delete the protocol '" + protocolName + "'?")) {
+            return;
+        }
+        
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", "/protocols?delete=1&name=" + encodeURIComponent(protocolName), true);
+        xhttp.send();
+        
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4) {
+                if (this.status == 200) {
+                    // Remove the protocol from the library
+                    delete protocols_library[protocolName];
+                    update_protocol_list();
+                    alert("Protocol deleted successfully");
+                } else {
+                    alert("Error deleting protocol: " + this.responseText);
+                }
+            }
+        };
     }
 
     // ----------------------------- SIMPLIFY CHART -----------------------------------------
@@ -1458,10 +1556,13 @@ function isProtocolOngoing() {
                     // split the answer by commas
                     var weights = answer.split(",");
                     // if there are 8 values input them in the table
-                    weights_table = document.getElementById("weights-table");
-                    if (weights.length == 8) {
-                        for (var i = 0; i < 8; i++) {
-                            weights_table.rows[1].cells[i].innerHTML = weights[i];
+                    var weights_table = document.getElementById("weights-table");
+                    if (weights_table && weights.length == 8) {
+                        // Make sure the table has at least 2 rows and each row has at least 8 cells
+                        if (weights_table.rows.length > 1 && weights_table.rows[1].cells.length >= 8) {
+                            for (var i = 0; i < 8; i++) {
+                                weights_table.rows[1].cells[i].innerHTML = weights[i];
+                            }
                         }
                     }
                 }

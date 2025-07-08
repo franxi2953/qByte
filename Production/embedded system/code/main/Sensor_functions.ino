@@ -200,7 +200,6 @@ float calculate_temperature (int sensor)
   return temperature_model(measured_resistance, sensor);
 }
 
-
 float temperature_model(float measured_resistance, int sensor)
 {
 

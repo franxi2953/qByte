@@ -1,5 +1,5 @@
 //Open quantitative LAMP device for isothermal amplifications
-//https://dl.espressif.com/dl/package_esp32_index.json
+//http://dl.espressif.com/dl/package_esp32_index.json
 
 #include <WiFi.h>
 #include <AsyncTCP.h>
@@ -21,7 +21,7 @@
 #include <esp32FOTA.hpp>
 #include <HTTPClient.h>
 
-String V_SOFTWARE = "1.0.3";
+String V_SOFTWARE = "2.0.2";
 String UPDATE_SERVER = "updateqbyte.ngrok.app";
 
 #define NUM_LEDS 3

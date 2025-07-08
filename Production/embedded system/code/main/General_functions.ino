@@ -56,7 +56,7 @@ void Initialize() {
   PWM_PID_3.SetSampleTime(PID_SAMPLE);
   PWM_PID_LID.SetSampleTime(PID_SAMPLE);
 
-  if (config.VERSION == 2)
+  if (config.VERSION >= 2)
   {
     PWM_PID_LID.SetOutputLimits(0,255); // set maximun value of LID to 125
     PWM_PID_1.SetOutputLimits(0,125);
@@ -722,6 +722,9 @@ void led_n_on (int led_n) {
         break;
     }
     FastLED.show();
+  } else if (config.VERSION == 3) {
+    int inverted_led = 7 - led_n; // Invert LED number (0->7, 1->6, etc.)
+    leds2.setBrightness(inverted_led, config.WEIGHTS[led_n]);
   } else {
     leds2.setBrightness(led_n,config.WEIGHTS[led_n]);
   }
@@ -759,6 +762,9 @@ void led_n_off (int led_n) {
         break;
     }
     FastLED.show();
+  } else if (config.VERSION == 3) {
+    int inverted_led = 7 - led_n; // Invert LED number (0->7, 1->6, etc.)
+    leds2.setBrightness(inverted_led, 0);
   } else {
     leds2.setBrightness(led_n,0);
   }

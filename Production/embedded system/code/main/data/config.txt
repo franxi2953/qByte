@@ -8,5 +8,5 @@
 	"melting_range":"[0,95]",
 	"melting_step":0.2,
 	"melting_time":10000,
-	"version":2,
+	"version":2.1,
 }

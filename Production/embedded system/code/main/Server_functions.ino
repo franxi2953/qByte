@@ -480,14 +480,117 @@ void _melting_range(AsyncWebServerRequest *request) {
 }
 
 void protocol_library (AsyncWebServerRequest *request) {
-  // if there's no argument we send back the protocol library JSON stored in protocols.txt
-  if (!request->hasArg("save_new"))
-  {
+  // Handle saving a new protocol
+  if (request->hasArg("save_new") && request->hasArg("protocol_data")) {
+    String protocol_data = request->arg("protocol_data");
+    
+    // Read existing protocols
+    File file = SPIFFS.open("/protocols.txt", "r");
+    String existing_protocols = "{}";
+    if (file) {
+      existing_protocols = file.readString();
+      file.close();
+    }
+    
+    // Parse existing protocols
+    DynamicJsonDocument doc(8192); // Adjust size as needed
+    DeserializationError error = deserializeJson(doc, existing_protocols);
+    
+    if (error) {
+      if (config.DEBUG == 1) Serial.println("[ERROR] Failed to parse existing protocols");
+      doc.clear(); // Start with empty object if parsing failed
+    }
+    
+    // Parse new protocol data
+    DynamicJsonDocument new_protocol_doc(4096); // Adjust size as needed
+    error = deserializeJson(new_protocol_doc, protocol_data);
+    
+    if (error) {
+      request->send(400, "text/plain", "[ERROR] Invalid protocol data format");
+      return;
+    }
+    
+    // Get protocol name from the request
+    String protocol_name = request->arg("name");
+    if (protocol_name.isEmpty()) {
+      request->send(400, "text/plain", "[ERROR] Protocol name is required");
+      return;
+    }
+    
+    // Add or update the protocol in the document
+    doc[protocol_name] = new_protocol_doc;
+    
+    // Save the updated protocols back to the file
+    file = SPIFFS.open("/protocols.txt", "w");
+    if (!file) {
+      request->send(500, "text/plain", "[ERROR] Failed to open protocols file for writing");
+      return;
+    }
+    
+    // Serialize JSON to file
+    if (serializeJson(doc, file) == 0) {
+      file.close();
+      request->send(500, "text/plain", "[ERROR] Failed to write protocols to file");
+      return;
+    }
+    
+    file.close();
+    request->send(200, "text/plain", "[OK] Protocol saved successfully");
+  }
+  // Handle deleting a protocol
+  else if (request->hasArg("delete")) {
+    String protocol_name = request->arg("name");
+    if (config.DEBUG == 1) Serial.println("[DEBUG] Deleting protocol: " + protocol_name);
+    
+    // Read existing protocols
+    File file = SPIFFS.open("/protocols.txt", "r");
+    String existing_protocols = "{}";
+    if (file) {
+      existing_protocols = file.readString();
+      file.close();
+    }
+    
+    // Parse existing protocols
+    DynamicJsonDocument doc(8192); // Adjust size as needed
+    DeserializationError error = deserializeJson(doc, existing_protocols);
+    
+    if (error) {
+      request->send(400, "text/plain", "[ERROR] Failed to parse existing protocols");
+      return;
+    }
+    
+    // Remove the protocol
+    if (!doc.containsKey(protocol_name)) {
+      request->send(404, "text/plain", "[ERROR] Protocol not found");
+      return;
+    }
+    
+    doc.remove(protocol_name);
+    
+    // Save the updated protocols back to the file
+    file = SPIFFS.open("/protocols.txt", "w");
+    if (!file) {
+      request->send(500, "text/plain", "[ERROR] Failed to open protocols file for writing");
+      return;
+    }
+    
+    // Serialize JSON to file
+    if (serializeJson(doc, file) == 0) {
+      file.close();
+      request->send(500, "text/plain", "[ERROR] Failed to write protocols to file");
+      return;
+    }
+    
+    file.close();
+    request->send(200, "text/plain", "[OK] Protocol deleted successfully");
+  }
+  // If no special arguments, just send back the protocol library
+  else {
     // open the file stored in SPIFFS protocols.txt and send it back as plain text
     if (config.DEBUG == 1) Serial.println("[DEBUG] Sending protocol library");
     AsyncWebServerResponse* response = request->beginResponse(SPIFFS, "/protocols.txt");
     request->send(response);
-  } 
+  }
 }
 
 void _variable_gains (AsyncWebServerRequest *request) {
@@ -557,38 +660,38 @@ String parseVersion(String html) {
   return html.substring(start, end);
 }
 
-// void updateSPIFFS() {
-//   Serial.println("[INFO] Updating files...");
-//   String onlineIndexHtml = fetchFileContent("http://" + UPDATE_SERVER + "/data/index.html");
+void updateSPIFFS() {
+  Serial.println("[INFO] Updating files...");
+  String onlineIndexHtml = fetchFileContent("http://" + UPDATE_SERVER + "/data/index.html");
 
-//   File localIndexHtmlFile = SPIFFS.open("/index.html", "r");
-//   if (!localIndexHtmlFile) {
-//     Serial.println("[ERROR] Failed to open local index.html");
-//     return;
-//   }
-//   String localIndexHtml = localIndexHtmlFile.readString();
-//   localIndexHtmlFile.close();
+  File localIndexHtmlFile = SPIFFS.open("/index.html", "r");
+  if (!localIndexHtmlFile) {
+    Serial.println("[ERROR] Failed to open local index.html");
+    return;
+  }
+  String localIndexHtml = localIndexHtmlFile.readString();
+  localIndexHtmlFile.close();
 
-//   String onlineVersion = parseVersion(onlineIndexHtml);
-//   String localVersion = parseVersion(localIndexHtml);
+  String onlineVersion = parseVersion(onlineIndexHtml);
+  String localVersion = parseVersion(localIndexHtml);
 
-//   Serial.println("[INFO] Online version: " + onlineVersion);
-//   Serial.println("[INFO] Local version: " + localVersion);
+  Serial.println("[INFO] Online version: " + onlineVersion);
+  Serial.println("[INFO] Local version: " + localVersion);
 
-//   if (onlineVersion != localVersion) {
-//     Serial.println("[INFO] Online version is newer, updating files...");
-//     // Online version is newer, fetch file list
-//     String fileListJson = fetchFileContent("http://" + UPDATE_SERVER + "/file_list");
-//     // Parse the JSON and extract the file list
-//     DynamicJsonDocument doc(1024);
-//     deserializeJson(doc, fileListJson);
-//     JsonArray fileList = doc["files"];
-//     // Update each file
-//     for (JsonVariant file : fileList) {
-//       fetchAndSaveFile("http://" + UPDATE_SERVER + "/data/" + file.as<String>(), "/" + file.as<String>());
-//     }
-//     Serial.println("[INFO] SPIFFS updated!");
-//   } else {
-//     Serial.println("Local version is up-to-date, no need to update files.");
-//   }
-// }
+  if (onlineVersion != localVersion) {
+    Serial.println("[INFO] Online version is newer, updating files...");
+    // Online version is newer, fetch file list
+    String fileListJson = fetchFileContent("http://" + UPDATE_SERVER + "/file_list");
+    // Parse the JSON and extract the file list
+    DynamicJsonDocument doc(1024);
+    deserializeJson(doc, fileListJson);
+    JsonArray fileList = doc["files"];
+    // Update each file
+    for (JsonVariant file : fileList) {
+      fetchAndSaveFile("http://" + UPDATE_SERVER + "/data/" + file.as<String>(), "/" + file.as<String>());
+    }
+    Serial.println("[INFO] SPIFFS updated!");
+  } else {
+    Serial.println("Local version is up-to-date, no need to update files.");
+  }
+}
