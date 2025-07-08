@@ -21,7 +21,7 @@ python_command = detect_python()
 def update_firmware(port):
     print("Updating firmware...")
     print("Port: " + port)
-    print("Firmware: v2.0")
+    print("Firmware: v3.0, Cebollin edition")
     # C:/Users/Cri User/AppData/Local/Arduino15/packages/esp32/tools/esptool_py/2.6.1/esptool.exe --chip esp32 --port COM1 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect
     # 0xe000 C:/Users/Cri User/AppData/Local/Arduino15/packages/esp32/hardware/esp32/1.0.4/tools/partitions/boot_app0.bin 
     # 0x1000 C:/Users/Cri User/AppData/Local/Arduino15/packages/esp32/hardware/esp32/1.0.4/tools/sdk/bin/bootloader_qio_80m.bin 
