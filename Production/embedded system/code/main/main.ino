@@ -132,8 +132,8 @@ void loop() {
     serialCommand();
       
 
-  //Check if wifi is connected, try to reconnect if not.
-  check_wifi();
+  //Check if wifi is connected, try to reconnect if not or start AP mode.
+  check_wifi_with_fallback();
 
   //Keeping the temperature
   runPID();

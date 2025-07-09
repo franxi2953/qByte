@@ -1,5 +1,5 @@
 void serverBegin() {
-    connect_wifi(40000);
+    connect_wifi_with_fallback(40000);
     
     MDNS.addService("http", "tcp", 80);
 }
