@@ -18,7 +18,7 @@ This is a quick guide to follow if you received an already assembled and program
 
 1. Connect the device to your computer and open the [serial monitor in the Arduino IDE](https://docs.arduino.cc/software/ide-v2/tutorials/ide-v2-serial-monitor/) (other serial monitors should also work). At the moment, there are some plugins for the ESP32 (like the SPIFFS Filesystem Uploader Plugin) that are not yet supported on Arduino 2. As qByte uses the SPIFFS plugin, we recommend installing the legacy version 1.8.X 
 
-2. Follow [these instructions](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/) to download the esp32 board
+2. Follow [these instructions](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/) to download and install the esp32 board.
 
 3. Ensure that the correct board and COM port are selected in the drop down at the top of screen, choose "Select Other Board and Port" if not. The board is DOIT ESP32 DEVKIT V1. If using a serial monitor other than the Arduino IDE it may _only_ be necessary to set the COM port number. If using Windows, you can find the COM port number by identifying the device in [Device Manager](https://www.lifewire.com/device-manager-2625860) > Ports (COM & LPT). It will be listed as Silicon Labs CP210x USB to UART Bridge. Instructions for finding the COM port on other operating systems can be found [here](https://www.mathworks.com/help/matlab/supportpkg/find-arduino-port-on-windows-mac-and-linux.html). If you don’t see the COM Port in your Arduino IDE, you need to install the [CP210x USB to UART Bridge VCP Drivers](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers).
 
