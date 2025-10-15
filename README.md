@@ -5,6 +5,11 @@
 
 [TOC]
 
+# Paper Reference
+
+qByte: An open-source isothermal fluorimeter for democratizing analysis of nucleic acids, proteins and cells
+Quero FJ, Aidelberg G, Vielfaure H, Huon de Kermadec Y, Cazaux S, et al. (2025) qByte: An open-source isothermal fluorimeter for democratizing analysis of nucleic acids, proteins and cells. PLOS Biology 23(5): e3003199. https://doi.org/10.1371/journal.pbio.3003199
+
 # Introduction 
 
 Accessibility to scientific and diagnostic instrumentation is one of the main bottlenecks in the implementation of global health and decentralized science. The advancement of digital fabrication techniques and the cheapening of electronic prototyping have facilitated the emergence of open source prototypes that lower the cost of entry of these technologies. However, despite the importance of these prototypes for making the hands-on biotechnology more ubiquitous, they rarely move from the prototyping phase to their actual implementation, with their subsequent adaptation to mass production and validation in real scenarios. This is particularly relevant in the field of nucleic acid amplification, the gold standard in the field of diagnostics and biosensing. Despite relevant open-source products that allow nucleic acid amplification (as [PocketPCR](https://gaudi.ch/PocketPCR/) or [NinjaPCR](https://ninjapcr.tori.st/)) their results still require a subsequent analysis by electrophoresis gels or an end-point examination with a transilluminator. 
