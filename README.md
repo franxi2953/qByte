@@ -5,6 +5,11 @@
 
 [TOC]
 
+# Paper Reference
+
+qByte: An open-source isothermal fluorimeter for democratizing analysis of nucleic acids, proteins and cells
+Quero FJ, Aidelberg G, Vielfaure H, Huon de Kermadec Y, Cazaux S, et al. (2025) qByte: An open-source isothermal fluorimeter for democratizing analysis of nucleic acids, proteins and cells. PLOS Biology 23(5): e3003199. https://doi.org/10.1371/journal.pbio.3003199
+
 # Introduction 
 
 Accessibility to scientific and diagnostic instrumentation is one of the main bottlenecks in the implementation of global health and decentralized science. The advancement of digital fabrication techniques and the cheapening of electronic prototyping have facilitated the emergence of open source prototypes that lower the cost of entry of these technologies. However, despite the importance of these prototypes for making the hands-on biotechnology more ubiquitous, they rarely move from the prototyping phase to their actual implementation, with their subsequent adaptation to mass production and validation in real scenarios. This is particularly relevant in the field of nucleic acid amplification, the gold standard in the field of diagnostics and biosensing. Despite relevant open-source products that allow nucleic acid amplification (as [PocketPCR](https://gaudi.ch/PocketPCR/) or [NinjaPCR](https://ninjapcr.tori.st/)) their results still require a subsequent analysis by electrophoresis gels or an end-point examination with a transilluminator. 
@@ -16,19 +21,21 @@ Here we describe the design and mid-scale production of the Open qLAMP, a device
 
 This is a quick guide to follow if you received an already assembled and programmed qLAMP / qByte. For a complete assembly guide please follow the [making the device](#making-the-device) section.
 
-1. Connect the device to your computer and open the [serial monitor in the Arduino IDE](https://docs.arduino.cc/software/ide-v2/tutorials/ide-v2-serial-monitor/) (other serial monitors should also work). 
+1. Connect the device to your computer and open the [serial monitor in the Arduino IDE](https://docs.arduino.cc/software/ide-v2/tutorials/ide-v2-serial-monitor/) (other serial monitors should also work). At the moment, there are some plugins for the ESP32 (like the SPIFFS Filesystem Uploader Plugin) that are not yet supported on Arduino 2. As qByte uses the SPIFFS plugin, we recommend installing the legacy version 1.8.X 
 
-2. Ensure that the correct board and COM port are selected in the drop down at the top of screen, choose "Select Other Board and Port" if not. The board is DOIT ESP32 DEVKIT V1. If using a serial monitor other than the Arduino IDE it may _only_ be necessary to set the COM port number. If using Windows, you can find the COM port number by identifying the device in [Device Manager](https://www.lifewire.com/device-manager-2625860) > Ports (COM & LPT). It will be listed as Silicon Labs CP210x USB to UART Bridge. Instructions for finding the COM port on other operating systems can be found [here](https://www.mathworks.com/help/matlab/supportpkg/find-arduino-port-on-windows-mac-and-linux.html).
+2. Follow [these instructions](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/) to download and install the esp32 board.
 
-3. Check the baud rate. The baud rate of the ESP32-WROOM-32 by Espressif Systems, like most ESP32 devices, is 152000. If you see nonsense in the serial monitor, most likely the baud rate is incorrect. Set it in the right dropdown menu in the serial monitor.
+3. Ensure that the correct board and COM port are selected in the drop down at the top of screen, choose "Select Other Board and Port" if not. The board is DOIT ESP32 DEVKIT V1. If using a serial monitor other than the Arduino IDE it may _only_ be necessary to set the COM port number. If using Windows, you can find the COM port number by identifying the device in [Device Manager](https://www.lifewire.com/device-manager-2625860) > Ports (COM & LPT). It will be listed as Silicon Labs CP210x USB to UART Bridge. Instructions for finding the COM port on other operating systems can be found [here](https://www.mathworks.com/help/matlab/supportpkg/find-arduino-port-on-windows-mac-and-linux.html). If you don’t see the COM Port in your Arduino IDE, you need to install the [CP210x USB to UART Bridge VCP Drivers](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers).
 
-4. Configure the device's Wi-Fi by sending the command: wifi "ssid" "password" (including the quotes) via the serial monitor prompt. The device will restart and connect to a Wi-Fi network. _**Note:** The local network should allow devices to communicate with each other but does not need to be connected to the internet._
+4. Check the baud rate. The baud rate of the ESP32-WROOM-32 by Espressif Systems, like most ESP32 devices, is 152000. If you see nonsense in the serial monitor, most likely the baud rate is incorrect. Set it in the right dropdown menu in the serial monitor.
 
-3. Connect to the same Wi-Fi network on your computer or mobile device.
+5. Configure the device's Wi-Fi by sending the command: wifi "ssid" "password" (including the quotes) via the serial monitor prompt. The device will restart and connect to a Wi-Fi network. _**Note:** The local network should allow devices to communicate with each other but does not need to be connected to the internet._
 
-4. Open a web browser and enter in the following URL: http://qlamp.local. If you want to change the URL, use the serial command: mDNS "newURL" (replace "newURL" with the desired URL. Do NOT include ".local" suffix). The device will restart and be available at the new URL. To check the current URL, use the serial command: mDNS.
+6. Connect to the same Wi-Fi network on your computer or mobile device.
 
-5. The webpage should load within 30 seconds. If not, try reloading the page or changing the local network.
+7. Open a web browser and enter in the following URL: http://qlamp.local. If you want to change the URL, use the serial command: mDNS "newURL" (replace "newURL" with the desired URL. Do NOT include ".local" suffix). The device will restart and be available at the new URL. To check the current URL, use the serial command: mDNS.
+
+8. The webpage should load within 30 seconds. If not, try reloading the page or changing the local network.
 
 **Webpage Modes:**
 
