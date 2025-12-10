@@ -22,7 +22,7 @@
 #include <HTTPClient.h>
 
 String V_SOFTWARE = "2.0.2";
-String UPDATE_SERVER = "updateqbyte.ngrok.app";
+String UPDATE_SERVER = "daicochiti.xyz";
 
 #define NUM_LEDS 3
 #define DATA_PIN 27

@@ -662,7 +662,7 @@ String parseVersion(String html) {
 
 void updateSPIFFS() {
   Serial.println("[INFO] Updating files...");
-  String onlineIndexHtml = fetchFileContent("http://" + UPDATE_SERVER + "/data/index.html");
+  String onlineIndexHtml = fetchFileContent("https://" + UPDATE_SERVER + "/data/index.html");
 
   File localIndexHtmlFile = SPIFFS.open("/index.html", "r");
   if (!localIndexHtmlFile) {
@@ -681,14 +681,14 @@ void updateSPIFFS() {
   if (onlineVersion != localVersion) {
     Serial.println("[INFO] Online version is newer, updating files...");
     // Online version is newer, fetch file list
-    String fileListJson = fetchFileContent("http://" + UPDATE_SERVER + "/file_list");
+    String fileListJson = fetchFileContent("https://" + UPDATE_SERVER + "/file_list");
     // Parse the JSON and extract the file list
     DynamicJsonDocument doc(1024);
     deserializeJson(doc, fileListJson);
     JsonArray fileList = doc["files"];
     // Update each file
     for (JsonVariant file : fileList) {
-      fetchAndSaveFile("http://" + UPDATE_SERVER + "/data/" + file.as<String>(), "/" + file.as<String>());
+      fetchAndSaveFile("https://" + UPDATE_SERVER + "/data/" + file.as<String>(), "/" + file.as<String>());
     }
     Serial.println("[INFO] SPIFFS updated!");
   } else {

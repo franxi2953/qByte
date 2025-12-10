@@ -1,0 +1,7 @@
+{
+  "type": "qbyte",
+  "version": "2.0.4",
+  "host": "daicochiti.xyz",
+  "port": 443,
+  "bin": "/data/main.ino.bin"
+}

@@ -12,7 +12,7 @@ void Initialize() {
 
   loadConfig();
  
-  esp32FOTA.setManifestURL("http://" + UPDATE_SERVER + "/data/fota.json");
+  esp32FOTA.setManifestURL("https://" + UPDATE_SERVER + "/data/fota.json");
 
     //config.mDNS to char*
   char mDNS[config.mDNS.length() + 1];
