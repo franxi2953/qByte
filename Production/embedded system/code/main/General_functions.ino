@@ -24,6 +24,7 @@ void Initialize() {
   }
  
   Serial.println("mDNS: " + config.mDNS);
+  Serial.println("VERSION: " + String(config.VERSION));
 
   //Initialize the LEDs
   if (config.VERSION == 1) {

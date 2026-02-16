@@ -285,7 +285,9 @@ void set_new_temp(float temp,AsyncWebServerRequest *request){
 
 void SendTemp(AsyncWebServerRequest *request)
 {
-  request->send(200, "text/plain", String(calculate_temperature(WELL1),4));
+  float temp = calculate_temperature(WELL1);
+  Serial.println("Calculated temp: " + String(temp, 4));
+  request->send(200, "text/plain", String(temp, 4));
   Serial.println("[INFO] Temperature requested and sent.");
 }
 

@@ -147,6 +147,7 @@ float calculate_resistance (int sensor)
   {
     //Read ADC and transform into voltage
     voltage = analogRead(temp_pin[sensor]) * (3.300000 /*adc max volts*/ / 4096 /*max adc value*/);
+    Serial.println("Sensor " + String(sensor) + " analogRead: " + String(analogRead(temp_pin[sensor])) + " voltage: " + String(voltage));
   } else {
     // set up multiplexor with PINS SW1, SW2
     // truth table
@@ -182,12 +183,13 @@ float calculate_resistance (int sensor)
     // set gain to one 
     PD_array.setGain(GAIN_ONE);
     voltage = (PD_array.readADC_SingleEnded(2) * 0.125)/1000;
-
+    Serial.println("Sensor " + String(sensor) + " ADC read: " + String(PD_array.readADC_SingleEnded(2)) + " voltage: " + String(voltage));
   }
 
 
   //Voltage to resistance calculation
   resistance = ( SERIES_RESISTOR * voltage) / (5 /*Vcc*/ - voltage);
+  Serial.println("Sensor " + String(sensor) + " resistance: " + String(resistance));
   return resistance;
   
 }
@@ -196,8 +198,10 @@ float calculate_temperature (int sensor)
 {
   //Resistance to temperature
   float measured_resistance = calculate_resistance(sensor)*1000;
-
-  return temperature_model(measured_resistance, sensor);
+  Serial.println("Sensor " + String(sensor) + " measured_resistance: " + String(measured_resistance));
+  float temp = temperature_model(measured_resistance, sensor);
+  Serial.println("Sensor " + String(sensor) + " temp: " + String(temp));
+  return temp;
 }
 
 float temperature_model(float measured_resistance, int sensor)
