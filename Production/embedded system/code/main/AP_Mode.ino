@@ -88,6 +88,10 @@ const char* config_html = R"rawliteral(
         <label for="password">WiFi Password:</label>
         <input type="password" id="password" name="password">
       </div>
+        <div>
+          <label for="mdns">Device Name (mDNS):</label>
+          <input type="text" id="mdns" name="mdns" placeholder="e.g. qbyte-device" required>
+        </div>
       <button type="submit">Save and Connect</button>
     </form>
   </div>
@@ -194,26 +198,31 @@ void startAPMode() {
   server.on("/save-wifi", HTTP_POST, [](AsyncWebServerRequest *request) {
     String ssid = "";
     String password = "";
-    
+    String mdns = "";
+
     if (request->hasParam("ssid", true)) {
       ssid = request->getParam("ssid", true)->value();
     }
-    
     if (request->hasParam("password", true)) {
       password = request->getParam("password", true)->value();
     }
-    
-    if (ssid.length() > 0) {
-      // Save credentials
+    if (request->hasParam("mdns", true)) {
+      mdns = request->getParam("mdns", true)->value();
+    }
+
+    if (ssid.length() > 0 && mdns.length() > 0) {
+      // Save credentials and mDNS
       saveCredentials(ssid, password);
-      
+      config.mDNS = mdns;
+      saveConfig();
+
       // Send success response with auto-redirect
       String response = "<html><head><meta http-equiv=\"refresh\" content=\"10;url=/\"></head><body>";
-      response += "<h1>WiFi Credentials Saved</h1>";
+      response += "<h1>WiFi Credentials & mDNS Saved</h1>";
       response += "<p>The device will now restart and attempt to connect to your WiFi network.</p>";
       response += "<p>If connection is successful, you can access the device at:</p>";
       response += "<ul>";
-      response += "<li>http://" + config.mDNS + ".local/</li>";
+      response += "<li>http://" + mdns + ".local/</li>";
       response += "<li>Or at the device's IP address (shown in serial monitor)</li>";
       response += "</ul>";
       response += "<p>The page will refresh in 10 seconds...</p>";
@@ -225,18 +234,18 @@ void startAPMode() {
       delay(500);
       ESP.restart();
     } else {
-      request->send(400, "text/plain", "Invalid SSID");
+      request->send(400, "text/plain", "Invalid SSID or mDNS");
     }
   });
+  
+  server.on("/device-config", _device_config);
   
   // Start the server
   server.begin();
   
   ap_mode_active = true;
   Serial.println("[INFO] AP Mode web server started");
-}
-
-// Modified connect_wifi function that falls back to AP mode
+}// Modified connect_wifi function that falls back to AP mode
 void connect_wifi_with_fallback(int time_trying) {
   Serial.println("\n");
   char* ssid = loadCredentials()[0];
@@ -331,6 +340,7 @@ void setupNormalServerRoutes() {
   server.on("/protocols", protocol_library);
   server.on("/variable_gains", _variable_gains); 
   server.on("/free_memory", _free_memory); 
+  server.on("/device-config", _device_config);
   server.serveStatic("/", SPIFFS, "/");
   
   server.onNotFound(handleNotFound);
@@ -353,3 +363,4 @@ void check_wifi_with_fallback() {
     }
   }
 }
+
