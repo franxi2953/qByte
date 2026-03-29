@@ -278,7 +278,7 @@ function transpose(array) {
 function updateRelative() {
     if (document.getElementById("relative").checked) {
         // divide each value by the initial value
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 48; i++) {
             for (let j = 0; j < fluo_chart.data.datasets[i].data.length; j++) {
                 fluo_chart.data.datasets[i].data[j] = fluo_chart.data.datasets[i].data[j] / initial_values[i];
             }
@@ -286,7 +286,7 @@ function updateRelative() {
 
     } else {
         // multiply each value by the initial value
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 48; i++) {
             for (let j = 0; j < fluo_chart.data.datasets[i].data.length; j++) {
                 fluo_chart.data.datasets[i].data[j] = fluo_chart.data.datasets[i].data[j] * initial_values[i];
             }
@@ -303,7 +303,7 @@ function clearCharts() {
         temp_data.labels = []
         calibration_data.labels = []
     
-        for (i = 0; i<8; i++) {
+        for (i = 0; i<48; i++) {
             fluo_chart.data.datasets[i].data = []
         }
         
@@ -326,7 +326,7 @@ function updateCharts()
 {
     // obtain the maximun value of the datasets that the labels don't include "Empty"
     let max_value = 0;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 48; i++) {
         if (fluo_chart.data.datasets[i].label != "Empty") {
             max_value = Math.max(max_value, Math.max.apply(Math, fluo_chart.data.datasets[i].data));
         }
@@ -336,7 +336,7 @@ function updateCharts()
 
     // obtain the minimun value of the datasets that the labels don't include "Empty"
     let min_value = Infinity;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 48; i++) {
         if (fluo_chart.data.datasets[i].label != "Empty") {
             min_value = Math.min(min_value, Math.min.apply(Math, fluo_chart.data.datasets[i].data));
         }
@@ -661,7 +661,7 @@ function saveProtocolData() {
     };
 
     // add the 8 fluo data to the data_JSON
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 48; i++) {
         data_JSON.datasets[i+5] = {
             label: fluo_chart.data.datasets[i].label + " " + i,	
             data: real_data.datasets[i + 5].data,
@@ -679,18 +679,18 @@ function saveProtocolData() {
 function saveProtocolDataCSV() {
     //Join the data from real_data
     var data_csv = "Time,";
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 48; i++) {
         data_csv += fluo_chart.data.datasets[i].label + ",";
     }
     data_csv += "Wells 1 temp,Wells 2 temp,Wells 3 temp,Lid temp,Target temp\n";
 
     for (i = 0; i < real_data.labels.length; i++) {
         data_csv += real_data.labels[i] + ",";
-        for (j = 0; j < 8; j++) {
+        for (j = 0; j < 48; j++) {
             data_csv += real_data.datasets[j].data[i] + ",";
         }
         for (j = 0; j < 5; j++) {
-            data_csv += real_data.datasets[j + 8].data[i] + ",";
+            data_csv += real_data.datasets[j + 48].data[i] + ",";
         }
         data_csv += "\n";
     }
@@ -717,7 +717,7 @@ function saveProtocolDataRDML() {
     xmlStr += '    <run id="run1">\n';
     
     // Loop over 8 fluorescence channels (channels 0 to 7 mapped to datasets indices 5-12)
-    for (var ch = 0; ch < 8; ch++) {
+    for (var ch = 0; ch < 48; ch++) {
         xmlStr += '      <react id="r' + (ch + 1) + '" sample="s' + (ch + 1) + '" target="t1">\n';
         // For each cycle/time point in the dataset
         for (var i = 0; i < real_data.labels.length; i++) {
@@ -741,7 +741,7 @@ function saveProtocolDataRDML() {
 function saveChartCtCSV() {
     //Join the data from chart_ct
     var data_csv = "Time,";
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 48; i++) {
         data_csv += fluo_chart.data.datasets[i].label + ",";
     }
     data_csv += "Wells 1 temp,Wells 2 temp,Wells 3 temp,Lid temp,Target temp\n";
@@ -752,7 +752,7 @@ function saveChartCtCSV() {
         // Find corresponding index in real_data labels
         let real_data_index = real_data.labels.indexOf(ct_chart.data.labels[i]);
 
-        for (j = 0; j < 8; j++) {
+        for (j = 0; j < 48; j++) {
             data_csv += ct_chart.data.datasets[j].data[i] + ",";
         }
         
@@ -776,7 +776,7 @@ function saveMeltingChartCSV() {
     var data_csv = "Temperature,";
     
     // Add the column headers (assuming that the labels are the same as for the fluo_chart)
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 48; i++) {
         data_csv += fluo_chart.data.datasets[i].label + ",";
     }
     data_csv = data_csv.slice(0, -1);  // Remove trailing comma
@@ -784,7 +784,7 @@ function saveMeltingChartCSV() {
 
     for (i = 0; i < melting_chart.data.labels.length; i++) {
         data_csv += melting_chart.data.labels[i] + ",";
-        for (j = 0; j < 8; j++) {
+        for (j = 0; j < 48; j++) {
             data_csv += melting_chart.data.datasets[j].data[i] + ",";
         }
         data_csv = data_csv.slice(0, -1);  // Remove trailing comma
@@ -961,13 +961,13 @@ function updateNormalization() {
 // ------------------------------------------ EXPERIMENT DESIGN DRAWINGS ------------------------------------------
 
 // create a variable to store the sample type of the 8 tubes
-var tube_ids = ["Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty"];
+var tube_ids = new Array(48).fill("Empty");
 // create a dictionary with the possible sample types and their colors
 var sample_types = {
     "Empty": "#FFFFFF"
 }
 
-var palette = ["#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1"]; //the 8 colors used (maximun number of tubes 8)
+var palette = ["#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1"];
 
 var selected_sample = "Empty";
 
@@ -986,7 +986,7 @@ window.onload = function () {
     function drawCircles() {
         var ctx = tubes_canvas.getContext("2d");
         //draw the circles, if the mouse is over the circle, change the color
-        for (var i = 0; i < 8; i++) {
+        for (var i = 0; i < 48; i++) {
             ctx.beginPath();
             ctx.arc(50+(i*50), 50, 20, 0, 2 * Math.PI);
             // stroke is grey
@@ -997,7 +997,7 @@ window.onload = function () {
             }
 
         // change the color and name of the charts based in the tube_ids and the sample_types
-        for (var i = 0; i < 8; i++) {
+        for (var i = 0; i < 48; i++) {
             // if the tube is empty, change the color to transparent
             if (tube_ids[i] == "Empty") {
                 // change chart.js color to transparent
@@ -1035,7 +1035,7 @@ window.onload = function () {
         var x = e.clientX - tubes_canvas.offsetLeft;
         var scrolled_distance = window.pageYOffset;
         var y = e.clientY - tubes_canvas.offsetTop + scrolled_distance;
-        for (var i = 0; i < 8; i++) {
+        for (var i = 0; i < 48; i++) {
             ctx.beginPath();
             // if the mouse is over the circle, change the color to selected color
             if (Math.sqrt(Math.pow(x-50-(i*50), 2) + Math.pow(y-50, 2)) < 20) {
@@ -1064,7 +1064,7 @@ window.onload = function () {
 
         var scrolled_distance = window.pageYOffset;
         var y = e.clientY - tubes_canvas.offsetTop + scrolled_distance;
-        for (var i = 0; i < 8; i++) {
+        for (var i = 0; i < 48; i++) {
             ctx.beginPath();
             ctx.arc(50+(i*50), 50, 20, 0, 2 * Math.PI);
             ctx.strokeStyle = "#000000";
@@ -1244,7 +1244,7 @@ window.onload = function () {
         } else if (cell_index == 3) { // DELETE SAMPLE
             if ((row-1)!=1) {
                 // change all the circles that have the sample type to empty
-                for (var i = 0; i < 8; i++) {
+                for (var i = 0; i < 48; i++) {
                     if (tube_ids[i] == sample_table.rows[row-1].cells[1].innerHTML) {
                         tube_ids[i] = "Empty";
                     }
@@ -1273,7 +1273,7 @@ window.onload = function () {
 		sample_types = buffer_sample_types;
 
         // change the name of the sample type in the tube_ids array
-        for (var i = 0; i < 8; i++) {
+        for (var i = 0; i < 48; i++) {
             if (tube_ids[i] == former_value) {
                 tube_ids[i] = input.value;
             }
@@ -1433,7 +1433,7 @@ window.onload = function () {
                     {
                         console.log(tubes_to_fill);
                     }
-                    for (var i = 0; i < 8; i++) {
+                    for (var i = 0; i < 48; i++) {
                         if (tubes_to_fill.includes(i)) {
                             tube_ids[i] = new_sample_name;
                         }
@@ -1471,7 +1471,7 @@ window.onload = function () {
             if (sampleName !== "Empty") {
                 // Get the tubes that have this sample type
                 var tubeIndices = [];
-                for (var i = 0; i < 8; i++) {
+                for (var i = 0; i < 48; i++) {
                     if (tube_ids[i] === sampleName) {
                         tubeIndices.push(i);
                     }
@@ -1600,7 +1600,7 @@ function isProtocolOngoing() {
                     if (weights_table && weights.length == 8) {
                         // Make sure the table has at least 2 rows and each row has at least 8 cells
                         if (weights_table.rows.length > 1 && weights_table.rows[1].cells.length >= 8) {
-                            for (var i = 0; i < 8; i++) {
+                            for (var i = 0; i < 48; i++) {
                                 weights_table.rows[1].cells[i].innerHTML = weights[i];
                             }
                         }
