@@ -79,7 +79,8 @@ void connect_wifi(int time_trying) {
       server.on("/melting_time", _melting_time);
       server.on("/protocols", protocol_library);
       server.on("/variable_gains", _variable_gains); 
-      server.on("/free_memory", _free_memory); 
+      server.on("/free_memory", _free_memory);
+      server.on("/device-config", _device_config); 
       server.serveStatic("/",SPIFFS,"/");
 
       
@@ -609,6 +610,41 @@ void _free_memory (AsyncWebServerRequest *request) {
   String answer = getFreeSpiffsSpacePercentage();
 
   request->send(200, "text/plain", answer);
+}
+
+void _device_config(AsyncWebServerRequest *request) {
+  if (request->method() == HTTP_GET) {
+    // Get current device config
+    DynamicJsonDocument doc(256);
+    doc["ip"] = WiFi.localIP().toString();
+    doc["mdns"] = config.mDNS;
+    char** creds = loadCredentials();
+    doc["ssid"] = creds[0];
+    doc["password"] = creds[1];
+    Serial.println("[INFO] Loaded credentials for device config");
+    String json;
+    serializeJson(doc, json);
+    request->send(200, "application/json", json);
+    delete[] creds[0];
+    delete[] creds[1];
+    delete[] creds;
+  } else if (request->method() == HTTP_POST) {
+    // Update device config
+    if (request->hasParam("mdns", true) && request->hasParam("ssid", true) && request->hasParam("password", true)) {
+      String mdns = request->getParam("mdns", true)->value();
+      String ssid = request->getParam("ssid", true)->value();
+      String password = request->getParam("password", true)->value();
+      if (ssid.length() > 0) saveCredentials(ssid, password);
+      if (mdns.length() > 0) { config.mDNS = mdns; saveConfig(); }
+      request->send(200, "text/plain", "OK");
+      delay(500);
+      ESP.restart();
+    } else {
+      request->send(400, "text/plain", "Missing parameters");
+    }
+  } else {
+    request->send(405, "text/plain", "Method Not Allowed");
+  }
 }
 
 String fetchFileContent(String url) {
