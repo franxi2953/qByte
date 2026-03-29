@@ -1,0 +1,17 @@
+[Unit]
+Description=Firmware Update Server for qByte LAMP
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/FranQuero/update_server
+ExecStart=/usr/bin/python3 /home/FranQuero/update_server/server.py 443 .
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
