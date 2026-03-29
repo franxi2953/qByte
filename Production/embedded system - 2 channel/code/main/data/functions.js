@@ -961,13 +961,13 @@ function updateNormalization() {
 // ------------------------------------------ EXPERIMENT DESIGN DRAWINGS ------------------------------------------
 
 // create a variable to store the sample type of the 8 tubes
-var tube_ids = new Array(48).fill("Empty");
+var tube_ids = ["Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty"];
 // create a dictionary with the possible sample types and their colors
 var sample_types = {
     "Empty": "#FFFFFF"
 }
 
-var palette = ["#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1", "#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1"];
+var palette = ["#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1"]; //the 8 colors used (maximun number of tubes 8)
 
 var selected_sample = "Empty";
 
@@ -986,7 +986,7 @@ window.onload = function () {
     function drawCircles() {
         var ctx = tubes_canvas.getContext("2d");
         //draw the circles, if the mouse is over the circle, change the color
-        for (var i = 0; i < 48; i++) {
+        for (var i = 0; i < 8; i++) {
             ctx.beginPath();
             ctx.arc(50+(i*50), 50, 20, 0, 2 * Math.PI);
             // stroke is grey
@@ -997,7 +997,7 @@ window.onload = function () {
             }
 
         // change the color and name of the charts based in the tube_ids and the sample_types
-        for (var i = 0; i < 48; i++) {
+        for (var i = 0; i < 8; i++) {
             // if the tube is empty, change the color to transparent
             if (tube_ids[i] == "Empty") {
                 // change chart.js color to transparent
@@ -1035,7 +1035,7 @@ window.onload = function () {
         var x = e.clientX - tubes_canvas.offsetLeft;
         var scrolled_distance = window.pageYOffset;
         var y = e.clientY - tubes_canvas.offsetTop + scrolled_distance;
-        for (var i = 0; i < 48; i++) {
+        for (var i = 0; i < 8; i++) {
             ctx.beginPath();
             // if the mouse is over the circle, change the color to selected color
             if (Math.sqrt(Math.pow(x-50-(i*50), 2) + Math.pow(y-50, 2)) < 20) {
@@ -1064,7 +1064,7 @@ window.onload = function () {
 
         var scrolled_distance = window.pageYOffset;
         var y = e.clientY - tubes_canvas.offsetTop + scrolled_distance;
-        for (var i = 0; i < 48; i++) {
+        for (var i = 0; i < 8; i++) {
             ctx.beginPath();
             ctx.arc(50+(i*50), 50, 20, 0, 2 * Math.PI);
             ctx.strokeStyle = "#000000";
@@ -1244,7 +1244,7 @@ window.onload = function () {
         } else if (cell_index == 3) { // DELETE SAMPLE
             if ((row-1)!=1) {
                 // change all the circles that have the sample type to empty
-                for (var i = 0; i < 48; i++) {
+                for (var i = 0; i < 8; i++) {
                     if (tube_ids[i] == sample_table.rows[row-1].cells[1].innerHTML) {
                         tube_ids[i] = "Empty";
                     }
@@ -1273,7 +1273,7 @@ window.onload = function () {
 		sample_types = buffer_sample_types;
 
         // change the name of the sample type in the tube_ids array
-        for (var i = 0; i < 48; i++) {
+        for (var i = 0; i < 8; i++) {
             if (tube_ids[i] == former_value) {
                 tube_ids[i] = input.value;
             }
@@ -1433,7 +1433,7 @@ window.onload = function () {
                     {
                         console.log(tubes_to_fill);
                     }
-                    for (var i = 0; i < 48; i++) {
+                    for (var i = 0; i < 8; i++) {
                         if (tubes_to_fill.includes(i)) {
                             tube_ids[i] = new_sample_name;
                         }
@@ -1471,7 +1471,7 @@ window.onload = function () {
             if (sampleName !== "Empty") {
                 // Get the tubes that have this sample type
                 var tubeIndices = [];
-                for (var i = 0; i < 48; i++) {
+                for (var i = 0; i < 8; i++) {
                     if (tube_ids[i] === sampleName) {
                         tubeIndices.push(i);
                     }
@@ -1600,7 +1600,7 @@ function isProtocolOngoing() {
                     if (weights_table && weights.length == 8) {
                         // Make sure the table has at least 2 rows and each row has at least 8 cells
                         if (weights_table.rows.length > 1 && weights_table.rows[1].cells.length >= 8) {
-                            for (var i = 0; i < 48; i++) {
+                            for (var i = 0; i < 8; i++) {
                                 weights_table.rows[1].cells[i].innerHTML = weights[i];
                             }
                         }

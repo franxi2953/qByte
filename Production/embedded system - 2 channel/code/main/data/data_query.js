@@ -380,7 +380,7 @@ options: {
 
 // Vertical bar chart for initial fluorescence.
 const signalFluo_data = {
-    labels: ['PD1', 'PD2', 'PD3', 'PD4', 'PD5', 'PD6', 'PD7', 'PD8'],
+    labels: Array.from({length:48}, (_, i) => 'Chan ' + (i+1)),
     datasets: [{
         label: 'Initial Signal Fluorescence',
         data: [],
@@ -413,7 +413,7 @@ const signalFluo_config = {
 
 // Horizontal bar chart for final LED weights.
 const signalWeights_data = {
-    labels: ['LED1', 'LED2', 'LED3', 'LED4', 'LED5', 'LED6', 'LED7', 'LED8'],
+    labels: Array.from({length:48}, (_, i) => 'Chan ' + (i+1)),
     datasets: [{
         label: 'Final Signal Weights (%)',
         data: [],
@@ -448,7 +448,7 @@ const signalWeights_config = {
 
 // Vertical bar chart for post-calibration fluorescence.
 const postSignalFluo_data = {
-    labels: ['PD1', 'PD2', 'PD3', 'PD4', 'PD5', 'PD6', 'PD7', 'PD8'],
+    labels: Array.from({length:48}, (_, i) => 'Chan ' + (i+1)),
     datasets: [{
         label: 'Post Calibration Fluorescence',
         data: [],
