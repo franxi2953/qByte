@@ -13,18 +13,18 @@ var LID_DIFF = 5;
 var normalization = "Subtract"; // "subtract" or "divide"
 window.N = 100;
 
-var initial_values = [1,1,1,1,1,1,1,1]; // initial values for the relative mode
+var initial_values = new Array(48).fill(1.0); // initial values for the relative mode
 var protocols_library = {}; // protocols library
 
 // Data that does not suffer simplification to be downloaded
 var real_data = {
     labels: [],
-    datasets: Array(5 + 8).fill(0).map(() => ({ data: [] }))  // 5 temp data + 8 fluo data
+    datasets: Array(5 + 48).fill(0).map(() => ({ data: [] }))  // 5 temp data + 48 fluo data
 };
 
 
-// Create a 8 values array to store initial values
-var initial_values = new Array(8);
+// Create a 48 values array to store initial values
+var initial_values = new Array(48);
 
 // ----------------------------------------------- MESSAGE PROCESSING FUNCTIONS --------------------------------------------------------
 function processData(row) {
@@ -39,16 +39,56 @@ function processData(row) {
         7: 'fluo 6',
         8: 'fluo 7',
         9: 'fluo 8',
-        10: 'temp 1',
-        11: 'temp 2',
-        12: 'temp 3',
-        13: 'temp lid',
-        14: 'resistance 1',
-        15: 'resistance 2',
-        16: 'resistance 3',
-        17: 'resistance lid',
-        18: 'resistance chamber',
-        19: 'memory'
+        10: 'fluo 9',
+        11: 'fluo 10',
+        12: 'fluo 11',
+        13: 'fluo 12',
+        14: 'fluo 13',
+        15: 'fluo 14',
+        16: 'fluo 15',
+        17: 'fluo 16',
+        18: 'fluo 17',
+        19: 'fluo 18',
+        20: 'fluo 19',
+        21: 'fluo 20',
+        22: 'fluo 21',
+        23: 'fluo 22',
+        24: 'fluo 23',
+        25: 'fluo 24',
+        26: 'fluo 25',
+        27: 'fluo 26',
+        28: 'fluo 27',
+        29: 'fluo 28',
+        30: 'fluo 29',
+        31: 'fluo 30',
+        32: 'fluo 31',
+        33: 'fluo 32',
+        34: 'fluo 33',
+        35: 'fluo 34',
+        36: 'fluo 35',
+        37: 'fluo 36',
+        38: 'fluo 37',
+        39: 'fluo 38',
+        40: 'fluo 39',
+        41: 'fluo 40',
+        42: 'fluo 41',
+        43: 'fluo 42',
+        44: 'fluo 43',
+        45: 'fluo 44',
+        46: 'fluo 45',
+        47: 'fluo 46',
+        48: 'fluo 47',
+        49: 'fluo 48',
+        50: 'temp 1',
+        51: 'temp 2',
+        52: 'temp 3',
+        53: 'temp lid',
+        54: 'resistance 1',
+        55: 'resistance 2',
+        56: 'resistance 3',
+        57: 'resistance lid',
+        58: 'resistance chamber',
+        59: 'memory'
     };
 
     const data = row.split(",");
@@ -64,13 +104,13 @@ function processData(row) {
     date.setSeconds(data[0]/1000); 
     const time = date.toISOString().substr(11, 8); 
 
-    const memory = 100 - parseFloat(data[19].slice(0, -1));
-    const temperatures = data.slice(10, 14).map(x => parseFloat(x));
+    const memory = 100 - parseFloat(data[59].slice(0, -1));
+    const temperatures = data.slice(50, 54).map(x => parseFloat(x));
     const targetTemperature = parseFloat(data[1]); // target temperature
     temperatures.push(targetTemperature); // add it to the temperatures array
-    const resistances = data.slice(14, 19).map(x => parseFloat(x));
-    const lidTemperature = parseFloat(data[13]);
-    const fluos = data.slice(2, 10).map(x => parseFloat(x));
+    const resistances = data.slice(54, 59).map(x => parseFloat(x));
+    const lidTemperature = parseFloat(data[53]);
+    const fluos = data.slice(2, 50).map(x => parseFloat(x));
     const averageFluo = fluos.reduce((a, b) => a + b, 0) / fluos.length;
 
     return { time, memory, temperatures, resistances, lidTemperature, fluos, averageFluo };

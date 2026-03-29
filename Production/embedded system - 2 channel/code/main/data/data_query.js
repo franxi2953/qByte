@@ -252,10 +252,10 @@ const fluo_data = {
     datasets: []
 };
 
-// add the 8 datasets to fluo_data.datasets 
-for (var i = 0; i < 8; i++) {
+// add the 48 datasets to fluo_data.datasets 
+for (var i = 0; i < 48; i++) {
     fluo_data.datasets.push({
-        label: 'PD' + (i + 1),
+        label: 'Chan ' + (i + 1),
         borderColor: "#FF5579",
         backgroundColor: "#FF5579",
         data: [],
