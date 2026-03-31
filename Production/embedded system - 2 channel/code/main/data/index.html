@@ -190,6 +190,20 @@
                     <div class="uk-heading-xsmall" style="margin-bottom: 5px; margin-top: 10px;">Normalization mode</div>
                     <input type="range" id="sliderNormalization" min="1" max="4" step="1" oninput="updateNormalization()" value="2"><div id="normalizationValue"  style="display: inline-block; margin-left: 10px;">Substract</div>
                     
+                    <div class="uk-heading-xsmall" style="margin-bottom: 5px; margin-top: 10px;">Cross-Channel Math</div>
+                    <div style="margin-bottom: 15px;">
+                        <select id="math_channel_A" class="uk-select uk-form-small" style="width:100px;">
+                            <!-- populated by JS -->
+                        </select>
+                        <select id="math_operation" class="uk-select uk-form-small" style="width:70px;">
+                            <option value="/">/</option>
+                            <option value="-">-</option>
+                        </select>
+                        <select id="math_channel_B" class="uk-select uk-form-small" style="width:100px;">
+                            <!-- populated by JS -->
+                        </select>
+                        <button class="uk-button uk-button-primary uk-button-small" id="btn_apply_math">Apply</button>
+                    </div>
                     <div class="uk-heading-xsmall" style="margin-bottom: 0px; margin-top: 10px;">Range select</div>
                     <div slider id="slider-ct-range" style="margin-bottom: 50px; width: 40%; margin-top: 15px;">
                         <div>

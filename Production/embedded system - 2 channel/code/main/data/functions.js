@@ -91,7 +91,7 @@ function processData(row) {
         59: 'memory'
     };
 
-    const data = row.split(",");
+    const data = row.trim().split(",");
 
     // Input validation: 
     // If the row is neither 'start' nor 'stop' and its length does not match the structure, discard it.
@@ -174,7 +174,9 @@ function updateData(from_past = false) {
                     .map(row => processData(row))
                     .filter(item => item !== null);  // Discard null items
 
-                updateMemorySlider(processedData[processedData.length - 1].memory);
+                if (processedData.length > 0) {
+                    updateMemorySlider(processedData[processedData.length - 1].memory);
+                }
 
                 let tempData = processedData.map(d => d.temperatures);
                 let calibrationData = processedData.map(d => d.resistances);

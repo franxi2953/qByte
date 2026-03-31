@@ -9,4 +9,9 @@
 	"melting_step":0.2,
 	"melting_time":10000,
 	"version":2.1,
+	"led_blue": 255,
+	"led_red": 255,
+	"led_green": 255,
+	"filter_ch1": "JAS Green",
+	"filter_ch2": "105 ORANGE"
 }
