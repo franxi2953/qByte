@@ -13,18 +13,18 @@ var LID_DIFF = 5;
 var normalization = "Subtract"; // "subtract" or "divide"
 window.N = 100;
 
-var initial_values = new Array(48).fill(1.0); // initial values for the relative mode
+var initial_values = [1,1,1,1,1,1,1,1]; // initial values for the relative mode
 var protocols_library = {}; // protocols library
 
 // Data that does not suffer simplification to be downloaded
 var real_data = {
     labels: [],
-    datasets: Array(5 + 48).fill(0).map(() => ({ data: [] }))  // 5 temp data + 48 fluo data
+    datasets: Array(5 + 8).fill(0).map(() => ({ data: [] }))  // 5 temp data + 8 fluo data
 };
 
 
-// Create a 48 values array to store initial values
-var initial_values = new Array(48);
+// Create a 8 values array to store initial values
+var initial_values = new Array(8);
 
 // ----------------------------------------------- MESSAGE PROCESSING FUNCTIONS --------------------------------------------------------
 function processData(row) {
@@ -39,59 +39,19 @@ function processData(row) {
         7: 'fluo 6',
         8: 'fluo 7',
         9: 'fluo 8',
-        10: 'fluo 9',
-        11: 'fluo 10',
-        12: 'fluo 11',
-        13: 'fluo 12',
-        14: 'fluo 13',
-        15: 'fluo 14',
-        16: 'fluo 15',
-        17: 'fluo 16',
-        18: 'fluo 17',
-        19: 'fluo 18',
-        20: 'fluo 19',
-        21: 'fluo 20',
-        22: 'fluo 21',
-        23: 'fluo 22',
-        24: 'fluo 23',
-        25: 'fluo 24',
-        26: 'fluo 25',
-        27: 'fluo 26',
-        28: 'fluo 27',
-        29: 'fluo 28',
-        30: 'fluo 29',
-        31: 'fluo 30',
-        32: 'fluo 31',
-        33: 'fluo 32',
-        34: 'fluo 33',
-        35: 'fluo 34',
-        36: 'fluo 35',
-        37: 'fluo 36',
-        38: 'fluo 37',
-        39: 'fluo 38',
-        40: 'fluo 39',
-        41: 'fluo 40',
-        42: 'fluo 41',
-        43: 'fluo 42',
-        44: 'fluo 43',
-        45: 'fluo 44',
-        46: 'fluo 45',
-        47: 'fluo 46',
-        48: 'fluo 47',
-        49: 'fluo 48',
-        50: 'temp 1',
-        51: 'temp 2',
-        52: 'temp 3',
-        53: 'temp lid',
-        54: 'resistance 1',
-        55: 'resistance 2',
-        56: 'resistance 3',
-        57: 'resistance lid',
-        58: 'resistance chamber',
-        59: 'memory'
+        10: 'temp 1',
+        11: 'temp 2',
+        12: 'temp 3',
+        13: 'temp lid',
+        14: 'resistance 1',
+        15: 'resistance 2',
+        16: 'resistance 3',
+        17: 'resistance lid',
+        18: 'resistance chamber',
+        19: 'memory'
     };
 
-    const data = row.trim().split(",");
+    const data = row.split(",");
 
     // Input validation: 
     // If the row is neither 'start' nor 'stop' and its length does not match the structure, discard it.
@@ -104,13 +64,13 @@ function processData(row) {
     date.setSeconds(data[0]/1000); 
     const time = date.toISOString().substr(11, 8); 
 
-    const memory = 100 - parseFloat(data[59].slice(0, -1));
-    const temperatures = data.slice(50, 54).map(x => parseFloat(x));
+    const memory = 100 - parseFloat(data[19].slice(0, -1));
+    const temperatures = data.slice(10, 14).map(x => parseFloat(x));
     const targetTemperature = parseFloat(data[1]); // target temperature
     temperatures.push(targetTemperature); // add it to the temperatures array
-    const resistances = data.slice(54, 59).map(x => parseFloat(x));
-    const lidTemperature = parseFloat(data[53]);
-    const fluos = data.slice(2, 50).map(x => parseFloat(x));
+    const resistances = data.slice(14, 19).map(x => parseFloat(x));
+    const lidTemperature = parseFloat(data[13]);
+    const fluos = data.slice(2, 10).map(x => parseFloat(x));
     const averageFluo = fluos.reduce((a, b) => a + b, 0) / fluos.length;
 
     return { time, memory, temperatures, resistances, lidTemperature, fluos, averageFluo };
@@ -174,9 +134,7 @@ function updateData(from_past = false) {
                     .map(row => processData(row))
                     .filter(item => item !== null);  // Discard null items
 
-                if (processedData.length > 0) {
-                    updateMemorySlider(processedData[processedData.length - 1].memory);
-                }
+                updateMemorySlider(processedData[processedData.length - 1].memory);
 
                 let tempData = processedData.map(d => d.temperatures);
                 let calibrationData = processedData.map(d => d.resistances);
@@ -280,7 +238,7 @@ function transpose(array) {
 function updateRelative() {
     if (document.getElementById("relative").checked) {
         // divide each value by the initial value
-        for (let i = 0; i < 48; i++) {
+        for (let i = 0; i < 8; i++) {
             for (let j = 0; j < fluo_chart.data.datasets[i].data.length; j++) {
                 fluo_chart.data.datasets[i].data[j] = fluo_chart.data.datasets[i].data[j] / initial_values[i];
             }
@@ -288,7 +246,7 @@ function updateRelative() {
 
     } else {
         // multiply each value by the initial value
-        for (let i = 0; i < 48; i++) {
+        for (let i = 0; i < 8; i++) {
             for (let j = 0; j < fluo_chart.data.datasets[i].data.length; j++) {
                 fluo_chart.data.datasets[i].data[j] = fluo_chart.data.datasets[i].data[j] * initial_values[i];
             }
@@ -305,7 +263,7 @@ function clearCharts() {
         temp_data.labels = []
         calibration_data.labels = []
     
-        for (i = 0; i<48; i++) {
+        for (i = 0; i<8; i++) {
             fluo_chart.data.datasets[i].data = []
         }
         
@@ -328,7 +286,7 @@ function updateCharts()
 {
     // obtain the maximun value of the datasets that the labels don't include "Empty"
     let max_value = 0;
-    for (let i = 0; i < 48; i++) {
+    for (let i = 0; i < 8; i++) {
         if (fluo_chart.data.datasets[i].label != "Empty") {
             max_value = Math.max(max_value, Math.max.apply(Math, fluo_chart.data.datasets[i].data));
         }
@@ -338,7 +296,7 @@ function updateCharts()
 
     // obtain the minimun value of the datasets that the labels don't include "Empty"
     let min_value = Infinity;
-    for (let i = 0; i < 48; i++) {
+    for (let i = 0; i < 8; i++) {
         if (fluo_chart.data.datasets[i].label != "Empty") {
             min_value = Math.min(min_value, Math.min.apply(Math, fluo_chart.data.datasets[i].data));
         }
@@ -663,7 +621,7 @@ function saveProtocolData() {
     };
 
     // add the 8 fluo data to the data_JSON
-    for (i = 0; i < 48; i++) {
+    for (i = 0; i < 8; i++) {
         data_JSON.datasets[i+5] = {
             label: fluo_chart.data.datasets[i].label + " " + i,	
             data: real_data.datasets[i + 5].data,
@@ -681,18 +639,18 @@ function saveProtocolData() {
 function saveProtocolDataCSV() {
     //Join the data from real_data
     var data_csv = "Time,";
-    for (i = 0; i < 48; i++) {
+    for (i = 0; i < 8; i++) {
         data_csv += fluo_chart.data.datasets[i].label + ",";
     }
     data_csv += "Wells 1 temp,Wells 2 temp,Wells 3 temp,Lid temp,Target temp\n";
 
     for (i = 0; i < real_data.labels.length; i++) {
         data_csv += real_data.labels[i] + ",";
-        for (j = 0; j < 48; j++) {
+        for (j = 0; j < 8; j++) {
             data_csv += real_data.datasets[j].data[i] + ",";
         }
         for (j = 0; j < 5; j++) {
-            data_csv += real_data.datasets[j + 48].data[i] + ",";
+            data_csv += real_data.datasets[j + 8].data[i] + ",";
         }
         data_csv += "\n";
     }
@@ -719,7 +677,7 @@ function saveProtocolDataRDML() {
     xmlStr += '    <run id="run1">\n';
     
     // Loop over 8 fluorescence channels (channels 0 to 7 mapped to datasets indices 5-12)
-    for (var ch = 0; ch < 48; ch++) {
+    for (var ch = 0; ch < 8; ch++) {
         xmlStr += '      <react id="r' + (ch + 1) + '" sample="s' + (ch + 1) + '" target="t1">\n';
         // For each cycle/time point in the dataset
         for (var i = 0; i < real_data.labels.length; i++) {
@@ -743,7 +701,7 @@ function saveProtocolDataRDML() {
 function saveChartCtCSV() {
     //Join the data from chart_ct
     var data_csv = "Time,";
-    for (i = 0; i < 48; i++) {
+    for (i = 0; i < 8; i++) {
         data_csv += fluo_chart.data.datasets[i].label + ",";
     }
     data_csv += "Wells 1 temp,Wells 2 temp,Wells 3 temp,Lid temp,Target temp\n";
@@ -754,7 +712,7 @@ function saveChartCtCSV() {
         // Find corresponding index in real_data labels
         let real_data_index = real_data.labels.indexOf(ct_chart.data.labels[i]);
 
-        for (j = 0; j < 48; j++) {
+        for (j = 0; j < 8; j++) {
             data_csv += ct_chart.data.datasets[j].data[i] + ",";
         }
         
@@ -778,7 +736,7 @@ function saveMeltingChartCSV() {
     var data_csv = "Temperature,";
     
     // Add the column headers (assuming that the labels are the same as for the fluo_chart)
-    for (i = 0; i < 48; i++) {
+    for (i = 0; i < 8; i++) {
         data_csv += fluo_chart.data.datasets[i].label + ",";
     }
     data_csv = data_csv.slice(0, -1);  // Remove trailing comma
@@ -786,7 +744,7 @@ function saveMeltingChartCSV() {
 
     for (i = 0; i < melting_chart.data.labels.length; i++) {
         data_csv += melting_chart.data.labels[i] + ",";
-        for (j = 0; j < 48; j++) {
+        for (j = 0; j < 8; j++) {
             data_csv += melting_chart.data.datasets[j].data[i] + ",";
         }
         data_csv = data_csv.slice(0, -1);  // Remove trailing comma

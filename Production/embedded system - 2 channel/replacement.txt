@@ -1,0 +1,20 @@
+void led_n_on (int led_n, int blue_intensity, int red_intensity, int green_intensity) {
+  int target_led = (config.VERSION == 3) ? (7 - led_n) : led_n;
+  
+  // Convert to floating weight application mapped to custom brightness max parameters
+  int b = constrain((blue_intensity * config.WEIGHTS[led_n]) / 100, 0, 255);
+  int r = constrain((red_intensity * config.WEIGHTS[led_n]) / 100, 0, 255);
+  int g = constrain((green_intensity * config.WEIGHTS[led_n]) / 100, 0, 255);
+
+  leds2_blue.setBrightness(target_led, b);
+  leds2_red.setBrightness(target_led, r);
+  leds2_green.setBrightness(target_led, g);
+}
+
+void led_n_off (int led_n) {
+  int target_led = (config.VERSION == 3) ? (7 - led_n) : led_n;
+
+  leds2_blue.setBrightness(target_led, 0);
+  leds2_red.setBrightness(target_led, 0);
+  leds2_green.setBrightness(target_led, 0);
+}

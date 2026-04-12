@@ -1,4 +1,52 @@
-float calculate_fluorescence (int well_n)
+void set_mux_channel(int well_n) {
+  switch (well_n)
+  {
+    case 0:
+      digitalWrite(SW1, LOW);
+      digitalWrite(SW2, LOW);
+      digitalWrite(SW3, LOW);
+      break;
+    case 1:
+      digitalWrite(SW1, HIGH);
+      digitalWrite(SW2, LOW);
+      digitalWrite(SW3, LOW);
+      break;
+    case 2:
+      digitalWrite(SW1, LOW);
+      digitalWrite(SW2, HIGH);
+      digitalWrite(SW3, LOW);
+      break;
+    case 3:
+      digitalWrite(SW1, HIGH);
+      digitalWrite(SW2, HIGH);
+      digitalWrite(SW3, LOW);
+      break;
+    case 4:
+      digitalWrite(SW1, LOW);
+      digitalWrite(SW2, LOW);
+      digitalWrite(SW3, HIGH);
+      break;
+    case 5:
+      digitalWrite(SW1, HIGH);
+      digitalWrite(SW2, LOW);
+      digitalWrite(SW3, HIGH);
+      break;
+    case 6:
+      digitalWrite(SW1, LOW);
+      digitalWrite(SW2, HIGH);
+      digitalWrite(SW3, HIGH);
+      break;
+    case 7:
+      digitalWrite(SW1, HIGH);
+      digitalWrite(SW2, HIGH);
+      digitalWrite(SW3, HIGH);
+      break;
+    default:
+      break;
+  }
+}
+
+float calculate_fluorescence_pd(int well_n, int pd_idx)
 {
   // no interrupt during the measurement
   float fluo_pd = 0;
@@ -9,42 +57,42 @@ float calculate_fluorescence (int well_n)
     {
       case 0:
         digitalWrite(SW1, LOW);
-        delay(50);
+        delayMicroseconds(config.FLUO_DELAY_US);
         fluo_pd = PD_array.readADC_SingleEnded(0);
         break;
       case 1:
         digitalWrite(SW2, LOW);
-        delay(50);
+        delayMicroseconds(config.FLUO_DELAY_US);
         fluo_pd = PD_array.readADC_SingleEnded(1);
         break;
       case 2:
         digitalWrite(SW1, HIGH);
-        delay(50);
+        delayMicroseconds(config.FLUO_DELAY_US);
         fluo_pd = PD_array.readADC_SingleEnded(0);
         break;
       case 3:
         digitalWrite(SW2, HIGH);
-        delay(50);
+        delayMicroseconds(config.FLUO_DELAY_US);
         fluo_pd = PD_array.readADC_SingleEnded(1);
         break;
       case 4:
         digitalWrite(SW3, LOW);
-        delay(50);
+        delayMicroseconds(config.FLUO_DELAY_US);
         fluo_pd = PD_array.readADC_SingleEnded(2);
         break;
       case 5:
         digitalWrite(SW4, LOW);
-        delay(50);
+        delayMicroseconds(config.FLUO_DELAY_US);
         fluo_pd = PD_array.readADC_SingleEnded(3);
         break;
       case 6:
         digitalWrite(SW3, HIGH);
-        delay(50);
+        delayMicroseconds(config.FLUO_DELAY_US);
         fluo_pd = PD_array.readADC_SingleEnded(2);
         break;
       case 7:
         digitalWrite(SW4, HIGH);
-        delay(50);
+        delayMicroseconds(config.FLUO_DELAY_US);
         fluo_pd = PD_array.readADC_SingleEnded(3);
         break;
       default:
@@ -52,155 +100,80 @@ float calculate_fluorescence (int well_n)
         break;
       }
   } else {
-      switch (well_n)
-      {
-        case 0:
-          //Set up the MUX
-          digitalWrite(SW1, LOW);
-          digitalWrite(SW2, LOW);
-          digitalWrite(SW3, LOW);
-          delay(5);
-          // read the adc value
-          fluo_pd = PD_array.readADC_SingleEnded(1);
-
-          break;
-        case 1:
-          //Set up the MUX
-          digitalWrite(SW1, HIGH);
-          digitalWrite(SW2, LOW);
-          digitalWrite(SW3, LOW);
-          delay(5);
-          // read the adc value
-          fluo_pd = PD_array.readADC_SingleEnded(1);
-          break;
-        case 2:
-          //Set up the MUX
-          digitalWrite(SW1, LOW);
-          digitalWrite(SW2, HIGH);
-          digitalWrite(SW3, LOW);
-          delay(5);
-          // read the adc value
-          fluo_pd = PD_array.readADC_SingleEnded(1);
-          break;
-        case 3:
-          //Set up the MUX
-          digitalWrite(SW1, HIGH);
-          digitalWrite(SW2, HIGH);
-          digitalWrite(SW3, LOW);
-          delay(5);
-          // read the adc value
-          fluo_pd = PD_array.readADC_SingleEnded(1);
-          break;
-        case 4:
-          //Set up the MUX
-          digitalWrite(SW1, LOW);
-          digitalWrite(SW2, LOW);
-          digitalWrite(SW3, HIGH);
-          delay(5);
-          // read the adc value
-          fluo_pd = PD_array.readADC_SingleEnded(1);
-          break;
-        case 5:
-          //Set up the MUX
-          digitalWrite(SW1, HIGH);
-          digitalWrite(SW2, LOW);
-          digitalWrite(SW3, HIGH);
-          delay(5);
-          // read the adc value
-          fluo_pd = PD_array.readADC_SingleEnded(1);
-          break;
-        case 6:
-          //Set up the MUX
-          digitalWrite(SW1, LOW);
-          digitalWrite(SW2, HIGH);
-          digitalWrite(SW3, HIGH);
-          delay(5);
-          // read the adc value
-          fluo_pd = PD_array.readADC_SingleEnded(1);
-          break;
-        case 7:
-          //Set up the MUX
-          digitalWrite(SW1, HIGH);
-          digitalWrite(SW2, HIGH);
-          digitalWrite(SW3, HIGH);
-          delay(5);
-          // read the adc value
-          fluo_pd = PD_array.readADC_SingleEnded(1);
-          break;
-        default:
-          fluo_pd = -1;  
-          break;
-        }
-
+      set_mux_channel(well_n);
+      delayMicroseconds(config.FLUO_DELAY_US);
+      int adc_ch = (pd_idx == 0) ? 1 : 3;
+      fluo_pd = PD_array.readADC_SingleEnded(adc_ch);
     }
   return fluo_pd;
+}
+
+float calculate_fluorescence (int well_n)
+{
+  return calculate_fluorescence_pd(well_n, 0);
 }
 
 float calculate_resistance (int sensor)
 {
   // no interrupt during the measurement
 
+  if (sensor < 0 || sensor > 3) {
+    return NAN;
+  }
+
   float voltage;
   float resistance;
 
-  if (config.VERSION == 1)
+  // set up multiplexor with PINS SW1, SW2
+  // truth table
+  // SW1 SW2 sensor
+  // 0   0   WELL1
+  // 0   1   WELL2
+  // 1   0   WELL3
+  // 1   1   LID
+
+  // set up the multiplexor
+  switch (sensor)
   {
-    //Read ADC and transform into voltage
-    voltage = analogRead(temp_pin[sensor]) * (3.300000 /*adc max volts*/ / 4096 /*max adc value*/);
-    Serial.println("Sensor " + String(sensor) + " analogRead: " + String(analogRead(temp_pin[sensor])) + " voltage: " + String(voltage));
-  } else {
-    // set up multiplexor with PINS SW1, SW2
-    // truth table
-    // SW1 SW2 sensor
-    // 0   0   WELL1
-    // 0   1   WELL2
-    // 1   0   WELL3
-    // 1   1   LID
-
-    // set up the multiplexor
-    switch (sensor)
-    {
-      case 0:
-        digitalWrite(SW1, LOW);
-        digitalWrite(SW2, LOW);
-        break;
-      case 1:
-        digitalWrite(SW1, HIGH);
-        digitalWrite(SW2, LOW);
-        break;
-      case 2:
-        digitalWrite(SW1, LOW);
-        digitalWrite(SW2, HIGH);
-        break;
-      case 3:
-        digitalWrite(SW1, HIGH);
-        digitalWrite(SW2, HIGH);
-        break;
-      default:
-        break;
-    }
-
-    // set gain to one 
-    PD_array.setGain(GAIN_ONE);
-    voltage = (PD_array.readADC_SingleEnded(2) * 0.125)/1000;
-    Serial.println("Sensor " + String(sensor) + " ADC read: " + String(PD_array.readADC_SingleEnded(2)) + " voltage: " + String(voltage));
+    case 0:
+      digitalWrite(SW1, LOW);
+      digitalWrite(SW2, LOW);
+      break;
+    case 1:
+      digitalWrite(SW1, HIGH);
+      digitalWrite(SW2, LOW);
+      break;
+    case 2:
+      digitalWrite(SW1, LOW);
+      digitalWrite(SW2, HIGH);
+      break;
+    case 3:
+      digitalWrite(SW1, HIGH);
+      digitalWrite(SW2, HIGH);
+      break;
+    default:
+      break;
   }
 
+  // set gain to one 
+  PD_array.setGain(GAIN_ONE);
+  voltage = (PD_array.readADC_SingleEnded(2) * 0.125)/1000;
 
   //Voltage to resistance calculation
   resistance = ( SERIES_RESISTOR * voltage) / (5 /*Vcc*/ - voltage);
-  Serial.println("Sensor " + String(sensor) + " resistance: " + String(resistance));
   return resistance;
   
 }
 
 float calculate_temperature (int sensor)
 {
+  if (sensor < 0 || sensor > 3) {
+    return NAN;
+  }
+
   //Resistance to temperature
   float measured_resistance = calculate_resistance(sensor)*1000;
-  Serial.println("Sensor " + String(sensor) + " measured_resistance: " + String(measured_resistance));
   float temp = temperature_model(measured_resistance, sensor);
-  Serial.println("Sensor " + String(sensor) + " temp: " + String(temp));
   return temp;
 }
 

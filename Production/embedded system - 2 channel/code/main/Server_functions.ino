@@ -1,5 +1,17 @@
+extern volatile bool force_manual_cycle;
+
 void serverBegin() {
     connect_wifi_with_fallback(40000);
+    //config.mDNS to char*
+    char mDNS[config.mDNS.length() + 1];
+    config.mDNS.toCharArray(mDNS, config.mDNS.length() + 1);
+
+    //Initialize the mDNS in config.mDNS
+    if (!MDNS.begin(mDNS)) {
+      Serial.println("[ERROR] Error setting up MDNS responder!");
+    } else {
+      Serial.println("[INFO] MDNS responder started");
+    }
     
     MDNS.addService("http", "tcp", 80);
 }
@@ -58,6 +70,9 @@ void connect_wifi(int time_trying) {
       server.on("/Calibration", _Calibration);
       server.on("/readWeights", _readWeights);
       server.on("/OnGoing", experimentOnGoing);
+      server.on("/device-info", device_info);
+      server.on("/device-config", device_config);
+      server.on("/ping", ping_route);
       server.on("/Run", _Run);
       server.on("/RunMelting", _RunMelting);
       server.on("/Stop", _Stop);
@@ -78,6 +93,7 @@ void connect_wifi(int time_trying) {
       server.on("/melting_range", _melting_range);
       server.on("/melting_time", _melting_time);
       server.on("/protocols", protocol_library);
+      server.on("/graphs", graph_library);
       server.on("/variable_gains", _variable_gains); 
       server.on("/free_memory", _free_memory); 
       server.serveStatic("/",SPIFFS,"/");
@@ -145,6 +161,45 @@ void experimentOnGoing(AsyncWebServerRequest *request) {
   }
 }
 
+void device_info(AsyncWebServerRequest *request) {
+  char* ssid = loadCredentials()[0];
+  String ip = WiFi.isConnected() ? WiFi.localIP().toString() : "0.0.0.0";
+  String mdns = config.mDNS + ".local";
+  String payload = "{";
+  payload += "\"ip\":\"" + ip + "\",";
+  payload += "\"ssid\":\"" + String(ssid) + "\",";
+  payload += "\"mdns\":\"" + mdns + "\"";
+  payload += "}";
+  request->send(200, "application/json", payload);
+}
+
+void device_config(AsyncWebServerRequest *request) {
+  String payload = "{";
+  payload += "\"version\":" + String(config.VERSION) + ",";
+  payload += "\"cycle_time\":" + String(config.CYCLE_TIME) + ",";
+  payload += "\"debug\":" + String(config.DEBUG ? "true" : "false") + ",";
+  payload += "\"lid_temp\":" + String(config.LID_TEMP) + ",";
+  payload += "\"lid_difference\":" + String(config.LID_DIFFERENCE) + ",";
+  payload += "\"melting_step\":" + String(config.MELTING_STEP) + ",";
+  payload += "\"melting_time\":" + String(config.MELTING_TIME) + ",";
+  payload += "\"fluo_delay_us\":" + String(config.FLUO_DELAY_US) + ",";
+  payload += "\"weights\":[";
+  for (int i = 0; i < 8; i++) {
+    payload += String(config.WEIGHTS[i], 3);
+    if (i < 7) {
+      payload += ",";
+    }
+  }
+  payload += "],";
+  payload += "\"melting_range\":[" + String(config.MELTING_RANGE[0]) + "," + String(config.MELTING_RANGE[1]) + "]";
+  payload += "}";
+  request->send(200, "application/json", payload);
+}
+
+void ping_route(AsyncWebServerRequest *request) {
+  request->send(200, "application/json", "{\"ok\":true}");
+}
+
 void _Calibration(AsyncWebServerRequest *request) {
   Serial.println("[INFO] Calibration requested.");
   // Call the calibration function. This may take some time (e.g. one minute).
@@ -173,10 +228,11 @@ void _Run(AsyncWebServerRequest *request){
   } else {
     request->send(200, "text/plain", "[OK] STARTING NEW PROTOCOL AT " + request->getParam("degrees")->value() + "ºC");
 
+    Serial.println("[INFO] New protocol requested with target temperature: " + request->getParam("degrees")->value() + "ºC");
     // reset all the variable_gain
-    for(int i = 0; i < 8; i++) {
+    for(int i = 0; i < 48; i++) {
       variable_gain[i] = 0;
-  }
+    } 
 
 
     OnGoing = true;
@@ -190,7 +246,7 @@ void _Run(AsyncWebServerRequest *request){
     f.print("start\n");
     f.close();
     
-    PerformCycle();
+    force_manual_cycle = true;
     
   }
 }
@@ -200,7 +256,7 @@ void _RunMelting(AsyncWebServerRequest *request){
     request->send(200, "text/plain", "[OK] STARTING NEW MELTING CURVE");
 
     // reset all the variable_gain
-    for(int i = 0; i < 8; i++) {
+    for(int i = 0; i < 48; i++) {
       variable_gain[i] = 0;
     }
 
@@ -220,7 +276,7 @@ void _RunMelting(AsyncWebServerRequest *request){
     f.print("start\n");
     f.close();
     
-    PerformCycle();
+    force_manual_cycle = true;
   
 }
 
@@ -360,7 +416,7 @@ void manual_cycle(AsyncWebServerRequest *request) {
     request->send(200, "text/plain", "[ERROR] PROTOCOL NOT RUNNING");
   } else {
     request->send(200, "text/plain", "[OK] STARTING MANUAL CYCLE");
-    last_cycle_time = millis() - (config.CYCLE_TIME + 1);
+    force_manual_cycle = true;
   }
 }
 
@@ -595,9 +651,110 @@ void protocol_library (AsyncWebServerRequest *request) {
   }
 }
 
+void graph_library (AsyncWebServerRequest *request) {
+  if (request->hasArg("save_new") && request->hasArg("graph_data")) {
+    String graph_data = request->arg("graph_data");
+
+    File file = SPIFFS.open("/graphs.txt", "r");
+    String existing_graphs = "{}";
+    if (file) {
+      existing_graphs = file.readString();
+      file.close();
+    }
+
+    DynamicJsonDocument doc(12288);
+    DeserializationError error = deserializeJson(doc, existing_graphs);
+    if (error) {
+      if (config.DEBUG == 1) Serial.println("[ERROR] Failed to parse existing graphs");
+      doc.clear();
+    }
+
+    DynamicJsonDocument new_graph_doc(8192);
+    error = deserializeJson(new_graph_doc, graph_data);
+    if (error) {
+      request->send(400, "text/plain", "[ERROR] Invalid graph data format");
+      return;
+    }
+
+    String graph_name = request->arg("name");
+    if (graph_name.isEmpty()) {
+      request->send(400, "text/plain", "[ERROR] Graph name is required");
+      return;
+    }
+
+    doc[graph_name] = new_graph_doc;
+
+    file = SPIFFS.open("/graphs.txt", "w");
+    if (!file) {
+      request->send(500, "text/plain", "[ERROR] Failed to open graphs file for writing");
+      return;
+    }
+
+    if (serializeJson(doc, file) == 0) {
+      file.close();
+      request->send(500, "text/plain", "[ERROR] Failed to write graphs to file");
+      return;
+    }
+
+    file.close();
+    request->send(200, "text/plain", "[OK] Graph library saved successfully");
+  }
+  else if (request->hasArg("delete")) {
+    String graph_name = request->arg("name");
+
+    File file = SPIFFS.open("/graphs.txt", "r");
+    String existing_graphs = "{}";
+    if (file) {
+      existing_graphs = file.readString();
+      file.close();
+    }
+
+    DynamicJsonDocument doc(12288);
+    DeserializationError error = deserializeJson(doc, existing_graphs);
+    if (error) {
+      request->send(400, "text/plain", "[ERROR] Failed to parse existing graphs");
+      return;
+    }
+
+    if (!doc.containsKey(graph_name)) {
+      request->send(404, "text/plain", "[ERROR] Graph library not found");
+      return;
+    }
+
+    doc.remove(graph_name);
+
+    file = SPIFFS.open("/graphs.txt", "w");
+    if (!file) {
+      request->send(500, "text/plain", "[ERROR] Failed to open graphs file for writing");
+      return;
+    }
+
+    if (serializeJson(doc, file) == 0) {
+      file.close();
+      request->send(500, "text/plain", "[ERROR] Failed to write graphs to file");
+      return;
+    }
+
+    file.close();
+    request->send(200, "text/plain", "[OK] Graph library deleted successfully");
+  }
+  else {
+    if (!SPIFFS.exists("/graphs.txt")) {
+      File file = SPIFFS.open("/graphs.txt", "w");
+      if (file) {
+        file.print("{}");
+        file.close();
+      }
+    }
+
+    AsyncWebServerResponse* response = request->beginResponse(SPIFFS, "/graphs.txt");
+    request->send(response);
+  }
+}
+
 void _variable_gains (AsyncWebServerRequest *request) {
   String answer = String(variable_gain[0]);
-  for (int i = 1; i<8; i++)
+  for (int i = 1; i<48; i++)
   {
     answer = answer + "," + variable_gain[i];
   }

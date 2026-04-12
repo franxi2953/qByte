@@ -1,9 +1,32 @@
+extern volatile bool force_manual_cycle;
+
+void disable_tlc_allcall(uint8_t addr) {
+  // Read MODE1 register (0x00)
+  Wire.beginTransmission(addr);
+  Wire.write(0x00);
+  Wire.endTransmission();
+
+  Wire.requestFrom((int)addr, 1);
+  if (!Wire.available()) {
+    return;
+  }
+
+  uint8_t mode1 = Wire.read();
+  mode1 &= ~0x01; // Clear ALLCALL bit (bit 0)
+
+  // Write MODE1 back with ALLCALL disabled
+  Wire.beginTransmission(addr);
+  Wire.write(0x00);
+  Wire.write(mode1);
+  Wire.endTransmission();
+}
+
 void Initialize() {
 
   Serial.begin(115200);
   delay(500); //To give the serial port time to start up
 
-  Wire.begin();
+  Wire.begin(3, 2); // SDA=3, SCL=2
 
   if(!SPIFFS.begin()){
     Serial.println("[ERROR] An Error has occurred while mounting SPIFFS");
@@ -13,32 +36,30 @@ void Initialize() {
   loadConfig();
  
   esp32FOTA.setManifestURL("https://" + UPDATE_SERVER + "/data/fota.json");
-
-    //config.mDNS to char*
-  char mDNS[config.mDNS.length() + 1];
-  config.mDNS.toCharArray(mDNS, config.mDNS.length() + 1);
-
-  //Initialize the mDNS in config.mDNS
-  if (!MDNS.begin(mDNS)) {
-    Serial.println("[ERROR] Error setting up MDNS responder!");
-  }
  
-  Serial.println("mDNS: " + config.mDNS);
-  Serial.println("VERSION: " + String(config.VERSION));
+  Serial.println("[INIT] mDNS: " + config.mDNS);
+  Serial.println("[INIT] VERSION: " + String(config.VERSION));
 
-  //Initialize the LEDs
-  if (config.VERSION == 1) {
-    FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS).setCorrection(UncorrectedColor);
-  } else {
-    leds2.init(); // Initialize the TLC59108
-    leds2.setRegister(0x11,  0x00); // Set general address to 0
-    leds2.setLedOutputMode(TLC59108::LED_MODE::PWM_IND);
-  }
+  // Initialize the 3 color LED drivers
+  leds_blue.init();
+  leds_red.init();
+  leds_green.init();
 
+  // Disable default ALLCALL response so each driver only answers to its own address.
+  disable_tlc_allcall(0x40);
+  disable_tlc_allcall(0x41);
+  disable_tlc_allcall(0x42);
+
+  leds_blue.setLedOutputMode(TLC59108::LED_MODE::PWM_IND);
+  leds_red.setLedOutputMode(TLC59108::LED_MODE::PWM_IND);
+  leds_green.setLedOutputMode(TLC59108::LED_MODE::PWM_IND);
+
+  Serial.println("[INIT] LED initialized");
 
   PD_array.setGain(GAIN_SIXTEEN);  
   PD_array.begin(0x48);
 
+  Serial.println("[INIT] Photodiodes initialized");
 
   //PWM pins as an output and initilize them
   pinMode(PWM_1, OUTPUT);
@@ -75,6 +96,7 @@ void Initialize() {
   PWM_PID_3.Start(calculate_temperature(WELL3),0,0);
   PWM_PID_LID.Start(calculate_temperature(LID),0,0);
 
+  Serial.println("[INIT] PWM initialized");
 
   pinMode(SW1, OUTPUT);
   pinMode(SW2, OUTPUT);
@@ -84,7 +106,7 @@ void Initialize() {
   serverBegin();
   manage_reset();
 
-  Serial.println("[INFO] Initialization complete");
+  Serial.println("[INIT] Initialization complete");
   
 
 }
@@ -174,7 +196,7 @@ void manage_reset() {
   }
 }
 
-int runPID() {
+void runPID() {
   if (OnGoing)
   {
     int TEMP_PID_1 = calculate_temperature(WELL1);
@@ -205,7 +227,6 @@ int runPID() {
     analogWrite(PWM_3, 0);
     analogWrite(PWM_LID, 0);
   }
-  
 }
 
 char** loadCredentials() {
@@ -411,40 +432,56 @@ void saveCredentials (String ssid, String password)
 void PerformCycle()
 {
   // Run if we are above the threshold in time and we have an ongoing experiment
-  if ((millis() - last_cycle_time > config.CYCLE_TIME) && OnGoing)
+  if (((millis() - last_cycle_time > config.CYCLE_TIME) || force_manual_cycle) && OnGoing)
   {
-    last_cycle_time = millis();
-    // Perform the fluorescence cycle
+    unsigned long t_start = millis();
+    last_cycle_time = t_start;
+    force_manual_cycle = false;
+
+    unsigned long t_fluo_start = millis();
     String fluorescence = runFluorescenceCycle();
-    
+    unsigned long t_fluo_end = millis();
+
+    unsigned long t_temp_start = millis();
     String tempe = String(calculate_temperature(WELL1)) + "," +
                    String(calculate_temperature(WELL2)) + "," +
                    String(calculate_temperature(WELL3)) + "," +
                    String(calculate_temperature(LID));
+    unsigned long t_temp_end = millis();
+
+    unsigned long t_res_start = millis();
     String resistance = String(calculate_resistance(WELL1)) + "," +
                         String(calculate_resistance(WELL2)) + "," +
                         String(calculate_resistance(WELL3)) + "," +
                         String(calculate_resistance(LID));
     String resistance_chamber = "1234";
+    unsigned long t_res_end = millis();
+
     String time_cycle = String(((long)millis() - start_time) + time_before_interruption);
     String free_space_SPIFFS = getFreeSpiffsSpacePercentage();
     String result = time_cycle + "," + heater_goal + fluorescence + tempe + "," + resistance + "," + resistance_chamber + "," + free_space_SPIFFS + "\n";
-    
+
+    if (config.DEBUG) {
+      Serial.println("[DEBUG][CYCLE] Fluorescence payload block: " + fluorescence);
+    }
+
     // Process free_space_SPIFFS string to float (remove the trailing "%" if needed)
     free_space_SPIFFS.remove(free_space_SPIFFS.length() - 1);
     float free_space = free_space_SPIFFS.toFloat();
-    Serial.print("[DEBUG] Free space on SPIFFS: ");
-    Serial.println(free_space);
-    
+    // Debug output removed
+
     // Store result in SPIFFS
     File file = SPIFFS.open("/last_run.txt", "a+");
     if (file && free_space >= 5) {
       file.print(result);
       file.close();
-      Serial.println("[INFO] New cycle performed and stored.");
+      // Debug output removed
     } else {
-      Serial.println("[INFO] New cycle performed but NOT stored :(.");
+      // Debug output removed
     }
+
+    unsigned long t_end = millis();
+    // Debug output removed
   }
 }
 
@@ -477,45 +514,179 @@ void PerformMelting() {
   }
 }
 
-String runFluorescenceCycle() {
-  String fluorescence = ",";
-  for (int i = 0; i < 8; i++) {
-    // Reset the variable gain for the current channel
-    variable_gain[i] = 0;
-    
-    // Background calculation
-    PD_array.setGain(GAIN_SIXTEEN);
-    int raw_background = calculate_fluorescence(i);
-    int value_off = raw_background * 0.0078125;
-    
-    // Signal calculation
-    float value_on = 32001; // initial value to ensure loop entry
-    led_n_on(i);
-    
-    int iterations = 0;
-    while (value_on > 32000 && variable_gain[i] < 6 && iterations < 10) {
-      PD_array.setGain(gain_dict[variable_gain[i]]);
-      value_on = calculate_fluorescence(i);
-      if (value_on > 32000 && variable_gain[i] < 6) {
-        variable_gain[i] += 1;
-      }
-      iterations++;
-    }
-    
-    // Convert value_on to mV using step factor corresponding to the current gain
-    float value_on_converted = value_on * step_dict[variable_gain[i]];
-    
-    // Turn LED off
-    led_n_off(i);
-    
-    // Subtract background from signal and append to the fluorescence string
-    float fluorescence_value = value_on_converted - value_off;
-    char buffer[50];
-    sprintf(buffer, "%.3f", fluorescence_value);
-    fluorescence += String(buffer);
-    fluorescence += ",";
+void printFluorescenceMatrixDebug(float matrix[8][6]) {
+  if (!config.DEBUG) {
+    return;
   }
 
+  Serial.println("[DEBUG][FLUO] Matrix per cycle (rows=LED 1..8, cols=B_pd1,B_pd2,R_pd1,R_pd2,G_pd1,G_pd2)");
+  Serial.println("[DEBUG][FLUO]          B_pd1      B_pd2      R_pd1      R_pd2      G_pd1      G_pd2");
+
+  for (int led = 0; led < 8; led++) {
+    char row[180];
+    snprintf(
+      row,
+      sizeof(row),
+      "[DEBUG][FLUO] LED %d   %10.3f  %10.3f  %10.3f  %10.3f  %10.3f  %10.3f",
+      led + 1,
+      matrix[led][0],
+      matrix[led][1],
+      matrix[led][2],
+      matrix[led][3],
+      matrix[led][4],
+      matrix[led][5]
+    );
+    Serial.println(row);
+  }
+}
+
+void printFluorescenceGainMatrixDebug(int gain_matrix[8][6]) {
+  if (!config.DEBUG) {
+    return;
+  }
+
+  const char* gain_label[6] = {"G16", "G8", "G4", "G2", "G1", "G23"};
+
+  Serial.println("[DEBUG][FLUO] Gain matrix (rows=LED 1..8, cols=B_pd1,B_pd2,R_pd1,R_pd2,G_pd1,G_pd2)");
+  Serial.println("[DEBUG][FLUO]          B_pd1  B_pd2  R_pd1  R_pd2  G_pd1  G_pd2");
+
+  for (int led = 0; led < 8; led++) {
+    char row[180];
+
+    snprintf(
+      row,
+      sizeof(row),
+      "[DEBUG][FLUO] LED %d   %5s  %5s  %5s  %5s  %5s  %5s",
+      led + 1,
+      gain_label[gain_matrix[led][0]],
+      gain_label[gain_matrix[led][1]],
+      gain_label[gain_matrix[led][2]],
+      gain_label[gain_matrix[led][3]],
+      gain_label[gain_matrix[led][4]],
+      gain_label[gain_matrix[led][5]]
+    );
+    Serial.println(row);
+  }
+}
+
+String runFluorescenceCycle() {
+  String fluorescence = ",";
+  float fluorescence_matrix[8][6] = {0};
+  int gain_matrix[8][6] = {0};
+  float off_shared_mv[8][2] = {0};
+  unsigned long t_fluo_start = millis();
+  // Arrays to track gain info
+  int initial_gain[48];
+  int final_gain[48];
+  int gain_swaps[48];
+  for (int idx = 0; idx < 48; idx++) {
+    initial_gain[idx] = variable_gain[idx];
+    gain_swaps[idx] = 0;
+  }
+
+  // Shared OFF baseline: measure each photodiode with all LEDs OFF before any ON measurement.
+  for (int led = 0; led < 8; led++) {
+    int mapped_led = (config.VERSION == 3) ? (7 - led) : led;
+    leds_blue.setBrightness(mapped_led, 0);
+    leds_red.setBrightness(mapped_led, 0);
+    leds_green.setBrightness(mapped_led, 0);
+  }
+  delayMicroseconds(config.FLUO_DELAY_US);
+
+  PD_array.setGain(GAIN_ONE);
+  for (int i = 0; i < 8; i++) {
+    for (int pd = 0; pd < 2; pd++) {
+      float raw_background = calculate_fluorescence_pd(i, pd);
+      off_shared_mv[i][pd] = raw_background * 0.125f;
+    }
+  }
+
+  for (int i = 0; i < 8; i++) {
+    unsigned long t_well_start = millis();
+    for (int color = 0; color < 3; color++) {
+      unsigned long t_color_start = millis();
+      unsigned long t_led_start = millis();
+      led_n_on_color(i, color);
+      delayMicroseconds(config.FLUO_DELAY_US);
+
+      for (int pd = 0; pd < 2; pd++) {
+        unsigned long t_pd_start = millis();
+        int gain_idx = (i * 6) + (color * 2) + pd;
+        // Start from last gain used
+        int gain = variable_gain[gain_idx];
+        int swaps_this_pd = 0;
+        float value_off = off_shared_mv[i][pd];
+
+        float value_on = 32001;
+        int iterations = 0;
+        unsigned long t_gain_start = millis();
+        // First, find the correct gain by increasing if saturated
+        PD_array.setGain(gain_dict[gain]);
+        value_on = calculate_fluorescence_pd(i, pd);
+        while (value_on > 32000 && gain < 5 && iterations < 10) {
+          gain++;
+          PD_array.setGain(gain_dict[gain]);
+          value_on = calculate_fluorescence_pd(i, pd);
+          swaps_this_pd++;
+          iterations++;
+        }
+        // If value is too low, decrease gain
+        // Use 35% of max (32000) as threshold
+        while (value_on < 0.35 * 32000 && gain > 0 && iterations < 10) {
+          gain--;
+          PD_array.setGain(gain_dict[gain]);
+          value_on = calculate_fluorescence_pd(i, pd);
+          swaps_this_pd++;
+          iterations++;
+        }
+        variable_gain[gain_idx] = gain;
+        gain_swaps[gain_idx] += swaps_this_pd;
+        unsigned long t_gain_end = millis();
+
+        float value_on_converted = value_on * step_dict[variable_gain[gain_idx]];
+        float fluorescence_value = value_on_converted - value_off;
+        int matrix_col = (color * 2) + pd;
+        fluorescence_matrix[i][matrix_col] = fluorescence_value;
+        gain_matrix[i][matrix_col] = variable_gain[gain_idx];
+
+        char buffer[50];
+        sprintf(buffer, "%.3f", fluorescence_value);
+        fluorescence += String(buffer);
+        fluorescence += ",";
+
+        unsigned long t_pd_end = millis();
+        // Debug output removed
+      }
+
+      led_n_off_color(i, color);
+      delayMicroseconds(config.FLUO_DELAY_US);
+      esp_task_wdt_reset();
+      unsigned long t_led_end = millis();
+      // Debug output removed
+      unsigned long t_color_end = millis();
+      // Debug output removed
+    }
+    unsigned long t_well_end = millis();
+    // Debug output removed
+  }
+  // Save final gains
+  for (int idx = 0; idx < 48; idx++) {
+    final_gain[idx] = variable_gain[idx];
+  }
+
+  // Safety: ensure all LEDs are OFF when leaving the fluorescence cycle.
+  for (int led = 0; led < 8; led++) {
+    int mapped_led = (config.VERSION == 3) ? (7 - led) : led;
+    leds_blue.setBrightness(mapped_led, 0);
+    leds_red.setBrightness(mapped_led, 0);
+    leds_green.setBrightness(mapped_led, 0);
+  }
+
+  // Debug output removed
+  unsigned long t_fluo_end = millis();
+  // Debug output removed
+  printFluorescenceMatrixDebug(fluorescence_matrix);
+  printFluorescenceGainMatrixDebug(gain_matrix);
   // Return the assembled fluorescence string.
   return fluorescence;
 }
@@ -525,7 +696,7 @@ void calibrateFluorescence() {
   const float learningRate = 0.5;           // Fraction of the difference to adjust per iteration
   const float convergenceThreshold = 0.05;   // When max weight change is below this, calibration is complete
 
-  Serial.println("[INFO] Calibration started...");
+  // Debug output removed
 
   // --- Step 1: Reset all channel weights to 100 ---
   for (int i = 0; i < 8; i++) {
@@ -556,10 +727,7 @@ void calibrateFluorescence() {
       refChannel = i;
     }
   }
-  Serial.print("[DEBUG] Reference channel determined: ");
-  Serial.print(refChannel);
-  Serial.print(" with initial value: ");
-  Serial.println(minFluorescence);
+  // Debug output removed
 
   // --- Step 3: Iterative calibration loop ---
   for (int iter = 0; iter < maxIterations; iter++) {
@@ -596,21 +764,11 @@ void calibrateFluorescence() {
     }
     
     // Debug: print the averaged readings
-    Serial.print("[DEBUG] Iteration ");
-    Serial.print(iter);
-    Serial.print(" averaged readings: ");
-    for (int i = 0; i < 8; i++) {
-      Serial.print(avgValues[i]);
-      Serial.print(" ");
-    }
-    Serial.println();
+    // Debug output removed
 
     // Get the reference channel's averaged fluorescence reading.
     int refFluorescence = avgValues[refChannel];
-    Serial.print("[DEBUG] Reference channel (");
-    Serial.print(refChannel);
-    Serial.print(") reading: ");
-    Serial.println(refFluorescence);
+    // Debug output removed
 
     // --- Step 4: Update weights gradually based on the current weight ---
     // For channel j, we assume its current measurement is influenced by its current weight W.
@@ -641,15 +799,9 @@ void calibrateFluorescence() {
       if (change > maxChange) {
         maxChange = change;
       }
-      Serial.print("[DEBUG] Channel ");
-      Serial.print(j);
-      Serial.print(" ideal: ");
-      Serial.print(idealWeight, 2);
-      Serial.print(", updated weight: ");
-      Serial.println(newWeight, 2);
+      // Debug output removed
     }
-    Serial.print("[DEBUG] Max weight change this iteration: ");
-    Serial.println(maxChange, 2);
+    // Debug output removed
     
     // Save the new configuration so the changes take effect.
     saveConfig();
@@ -657,7 +809,7 @@ void calibrateFluorescence() {
     
     // Check for convergence: if the maximum weight change is small, stop iterating.
     if (maxChange < convergenceThreshold) {
-      Serial.println("[DEBUG] Calibration complete: weights have converged.");
+      // Debug output removed
       break;
     }
   }
@@ -691,84 +843,40 @@ void check_wifi() {
   }
 }
 
-void led_n_on (int led_n) {
-  if (config.VERSION == 1)
-  {
-    switch (led_n) {
-      case 0:
-        leds[1].setRGB( config.WEIGHTS[0],0, 0);
-        break;
-      case 1:
-        leds[0].setRGB( 0, 0, config.WEIGHTS[1]);
-        break;
-      case 2:
-        leds[0].setRGB( 0, config.WEIGHTS[2], 0);
-        break;
-      case 3:
-        leds[0].setRGB( config.WEIGHTS[3], 0, 0);
-        break;
-      case 4:
-        leds[2].setRGB( 0, config.WEIGHTS[4], 0);
-        break;
-      case 5:
-        leds[2].setRGB( config.WEIGHTS[5], 0, 0);
-        break;
-      case 6:
-        leds[1].setRGB( 0, 0, config.WEIGHTS[6]);
-        break;
-      case 7:
-        leds[1].setRGB( 0, config.WEIGHTS[7], 0);
-        break;
-      default:
-        break;
-    }
-    FastLED.show();
-  } else if (config.VERSION == 3) {
-    int inverted_led = 7 - led_n; // Invert LED number (0->7, 1->6, etc.)
-    leds2.setBrightness(inverted_led, config.WEIGHTS[led_n]);
-  } else {
-    leds2.setBrightness(led_n,config.WEIGHTS[led_n]);
+TLC59108* get_led_driver(int color_idx) {
+  switch (color_idx) {
+    case 0:
+      return &leds_blue;
+    case 1:
+      return &leds_red;
+    default:
+      return &leds_green;
   }
 }
 
+void led_n_on_color(int led_n, int color_idx) {
+  int mapped_led = (config.VERSION == 3) ? (7 - led_n) : led_n;
+  // Force single-color output: clear this LED on all drivers first.
+  leds_blue.setBrightness(mapped_led, 0);
+  leds_red.setBrightness(mapped_led, 0);
+  leds_green.setBrightness(mapped_led, 0);
+
+  TLC59108* driver = get_led_driver(color_idx);
+  driver->setBrightness(mapped_led, config.WEIGHTS[led_n]);
+}
+
+void led_n_off_color(int led_n, int color_idx) {
+  int mapped_led = (config.VERSION == 3) ? (7 - led_n) : led_n;
+  TLC59108* driver = get_led_driver(color_idx);
+  driver->setBrightness(mapped_led, 0);
+}
+
+void led_n_on (int led_n) {
+  led_n_on_color(led_n, 0);
+}
+
 void led_n_off (int led_n) {
-  if (config.VERSION == 1) 
-  {
-    switch (led_n) {
-      case 0:
-        leds[1] = CRGB::Black;
-        break;
-      case 1:
-        leds[0] = CRGB::Black;
-        break;
-      case 2:
-        leds[0] = CRGB::Black;
-        break;
-      case 3:
-        leds[0] = CRGB::Black;
-        break;
-      case 4:
-        leds[2] = CRGB::Black;
-        break;
-      case 5:
-        leds[2] = CRGB::Black;
-        break;
-      case 6:
-        leds[1] = CRGB::Black;
-        break;
-      case 7:
-        leds[1] = CRGB::Black;
-        break;
-      default:
-        break;
-    }
-    FastLED.show();
-  } else if (config.VERSION == 3) {
-    int inverted_led = 7 - led_n; // Invert LED number (0->7, 1->6, etc.)
-    leds2.setBrightness(inverted_led, 0);
-  } else {
-    leds2.setBrightness(led_n,0);
-  }
+  led_n_off_color(led_n, 0);
 }
 
 String getFreeSpiffsSpacePercentage() {

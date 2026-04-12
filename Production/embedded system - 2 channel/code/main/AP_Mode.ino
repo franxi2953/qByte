@@ -149,6 +149,7 @@ void startAPMode() {
   Serial.println("[INFO] Starting Access Point mode");
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ap_ssid, ap_password);
+  esp_wifi_set_max_tx_power(30);
   
   Serial.print("[INFO] AP IP address: ");
   Serial.println(WiFi.softAPIP());
@@ -249,13 +250,15 @@ void connect_wifi_with_fallback(int time_trying) {
     return;
   }
 
+  Serial.print("[INFO] Connecting to " + String(ssid) + "...");
+
   WiFi.disconnect();
   WiFi.mode(WIFI_STA);
   delay(200);
+  esp_wifi_set_max_tx_power(30);
+  delay(200);
   WiFi.begin(ssid, password);
   delay(1000);
-  
-  Serial.print("[INFO] Connecting to " + String(ssid) + "...");
 
   int dot_counter = 0;
   int timeout = millis();
@@ -309,6 +312,8 @@ void setupNormalServerRoutes() {
   server.on("/Calibration", _Calibration);
   server.on("/readWeights", _readWeights);
   server.on("/OnGoing", experimentOnGoing);
+  server.on("/device-info", device_info);
+  server.on("/ping", ping_route);
   server.on("/Run", _Run);
   server.on("/RunMelting", _RunMelting);
   server.on("/Stop", _Stop);
@@ -329,6 +334,7 @@ void setupNormalServerRoutes() {
   server.on("/melting_range", _melting_range);
   server.on("/melting_time", _melting_time);
   server.on("/protocols", protocol_library);
+  server.on("/graphs", graph_library);
   server.on("/variable_gains", _variable_gains); 
   server.on("/free_memory", _free_memory); 
   server.serveStatic("/", SPIFFS, "/");

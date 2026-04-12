@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>qByte Data Analysis Phaser</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="phaser-root"></div>
+
+  <div id="dom-overlay">
+    <input id="csv-file" type="file" accept=".csv,text/csv" hidden />
+
+    <div id="chart-shell" class="overlay-block">
+      <div id="chart-toolbar">
+        <button id="download-jpeg" type="button">Descargar JPEG</button>
+      </div>
+      <canvas id="main-chart"></canvas>
+    </div>
+
+    <div id="left-panel-content" class="overlay-block panel-content hidden">
+      <h3>Samples</h3>
+      <p class="hint">Rename and recolor each tube.</p>
+
+      <label class="field-label" for="palette-select">Palette</label>
+      <div class="row">
+        <select id="palette-select">
+          <option value="macos">macOS</option>
+          <option value="viridis">Viridis</option>
+          <option value="plasma">Plasma</option>
+          <option value="ocean">Ocean</option>
+        </select>
+        <button id="apply-palette" type="button">Apply</button>
+      </div>
+
+      <div id="sample-list"></div>
+    </div>
+
+    <div id="right-panel-content" class="overlay-block panel-content hidden">
+      <h3>Analysis Controls</h3>
+      <p class="hint">Shared controls for Processed Fluo and Melting. Melting uses -dF/dT with the selected temperature channel.</p>
+
+      <label class="field-label" for="normalize-mode">Normalization</label>
+      <select id="normalize-mode">
+        <option value="raw">Raw</option>
+        <option value="subtract">Subtraction</option>
+        <option value="division">Division</option>
+        <option value="minmax">Min-Max</option>
+      </select>
+
+      <label class="field-label" for="temp-channel">Temperature channel</label>
+      <select id="temp-channel"></select>
+
+      <label class="field-label" for="range-start">Range start (%)</label>
+      <input id="range-start" type="range" min="0" max="95" value="20" />
+      <div id="range-start-label" class="value-label">20%</div>
+
+      <label class="field-label" for="range-end">Range end (%)</label>
+      <input id="range-end" type="range" min="5" max="100" value="85" />
+      <div id="range-end-label" class="value-label">85%</div>
+
+      <div class="row two-col">
+        <div>
+          <label class="field-label" for="start-value">Start value</label>
+          <input id="start-value" type="number" min="1" step="1" value="1" />
+        </div>
+        <div>
+          <label class="field-label" for="end-value">End value</label>
+          <input id="end-value" type="number" min="2" step="1" value="2" />
+        </div>
+      </div>
+
+      <label class="field-label" for="smooth-window">Smooth window (points)</label>
+      <input id="smooth-window" type="range" min="1" max="15" value="3" />
+      <div id="smooth-window-label" class="value-label">3</div>
+
+      <button id="export-current" type="button">Export current tab CSV</button>
+
+      <div id="ct-threshold-box" class="threshold-box">
+        <h4>CT threshold (click chart)</h4>
+        <p id="threshold-value" class="threshold-value">Not set</p>
+        <div id="threshold-help" class="hint">Click on a point/height in CT chart to set threshold.</div>
+        <table class="crossings-table">
+          <thead>
+            <tr>
+              <th>Sample</th>
+              <th>Crossing</th>
+            </tr>
+          </thead>
+          <tbody id="crossings-body"></tbody>
+        </table>
+      </div>
+
+      <p id="status-line" class="status">Waiting for CSV...</p>
+    </div>
+  </div>
+
+  <script src="vendor/phaser.min.js"></script>
+  <script src="vendor/papaparse.min.js"></script>
+  <script src="vendor/chart.umd.min.js"></script>
+  <script src="title.scene.js"></script>
+  <script src="ui.scene.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

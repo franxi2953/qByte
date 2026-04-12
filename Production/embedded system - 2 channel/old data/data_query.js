@@ -8,27 +8,21 @@ var time_running = 0;
 var CYCLE = document.getElementById("cycle");
 
 CYCLE.onclick = function () {
-    console.log("Send manual_cycle request to server...");
+
     var xhttp = new XMLHttpRequest();
-    xhttp.open("GET", "/manual_cycle", true);
-    xhttp.onreadystatechange = function() {
-        if (this.readyState == 4) {
-            console.log("manual_cycle response: status=" + this.status + ", text=" + this.responseText);
-            if (this.status == 200) {
-                var answer = this.responseText;
-                if (answer.includes("[ERROR]")) {
-                    console.log("[ERROR] Could not start cycle: " + answer);
-                } else {
-                    setTimeout(function () {
-                        updateData();
-                    }, 3000);
-                }
-            } else {
-                console.error("Failed to hit /manual_cycle. Status: " + this.status);
-            }
-        }
-    };
+    xhttp.open("GET", "/manual_cycle", false);
     xhttp.send();
+    var answer = xhttp.responseText;
+    if (answer.includes("[ERROR]")) {
+        console.log("[ERROR] Could not start cycle");
+    } else {
+        // wait one second
+        setTimeout(function () {
+            // update the data
+            updateData();
+        }, 3000);
+
+    }
 }
 
 // Run/Run Melting/Stop button action
@@ -258,10 +252,10 @@ const fluo_data = {
     datasets: []
 };
 
-// add the 48 datasets to fluo_data.datasets 
-for (var i = 0; i < 48; i++) {
+// add the 8 datasets to fluo_data.datasets 
+for (var i = 0; i < 8; i++) {
     fluo_data.datasets.push({
-        label: 'Chan ' + (i + 1),
+        label: 'PD' + (i + 1),
         borderColor: "#FF5579",
         backgroundColor: "#FF5579",
         data: [],
@@ -386,7 +380,7 @@ options: {
 
 // Vertical bar chart for initial fluorescence.
 const signalFluo_data = {
-    labels: Array.from({length:48}, (_, i) => 'Chan ' + (i+1)),
+    labels: ['PD1', 'PD2', 'PD3', 'PD4', 'PD5', 'PD6', 'PD7', 'PD8'],
     datasets: [{
         label: 'Initial Signal Fluorescence',
         data: [],
@@ -419,7 +413,7 @@ const signalFluo_config = {
 
 // Horizontal bar chart for final LED weights.
 const signalWeights_data = {
-    labels: Array.from({length:48}, (_, i) => 'Chan ' + (i+1)),
+    labels: ['LED1', 'LED2', 'LED3', 'LED4', 'LED5', 'LED6', 'LED7', 'LED8'],
     datasets: [{
         label: 'Final Signal Weights (%)',
         data: [],
@@ -454,7 +448,7 @@ const signalWeights_config = {
 
 // Vertical bar chart for post-calibration fluorescence.
 const postSignalFluo_data = {
-    labels: Array.from({length:48}, (_, i) => 'Chan ' + (i+1)),
+    labels: ['PD1', 'PD2', 'PD3', 'PD4', 'PD5', 'PD6', 'PD7', 'PD8'],
     datasets: [{
         label: 'Post Calibration Fluorescence',
         data: [],
@@ -532,95 +526,6 @@ function parseCalibrationResponse(response) {
     let parts = response.split(",").filter(item => item.trim() !== "");
     parts.shift(); // Remove the "[OK]" element.
     return parts.map(Number);
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////
-// Cross-Channel Math Handlers
-/////////////////////////////////////////////////////////////////////////////////////////////
-
-// Populate Cross-Channel Math mapping dropdowns
-var math_channel_A = document.getElementById("math_channel_A");
-var math_channel_B = document.getElementById("math_channel_B");
-if (math_channel_A && math_channel_B) {
-    for(var i=0; i<48; i++){
-        var opt1 = document.createElement("option");
-        opt1.value = i;
-        opt1.text = "Chan " + (i+1);
-        math_channel_A.add(opt1);
-        
-        var opt2 = document.createElement("option");
-        opt2.value = i;
-        opt2.text = "Chan " + (i+1);
-        math_channel_B.add(opt2);
-    }
-}
-
-var btn_apply_math = document.getElementById("btn_apply_math");
-if (btn_apply_math) {
-    btn_apply_math.onclick = function() {
-        var cA = parseInt(document.getElementById("math_channel_A").value);
-        var cB = parseInt(document.getElementById("math_channel_B").value);
-        var op = document.getElementById("math_operation").value;
-
-        if(!window.fluo_chart || fluo_chart.data.datasets.length <= Math.max(cA,cB) || fluo_chart.data.datasets[cA].data.length == 0){
-            alert("Not enough data to apply math.");
-            return;
-        }
-
-        var new_data = [];
-        var datasetA = fluo_chart.data.datasets[cA].data;
-        var datasetB = fluo_chart.data.datasets[cB].data;
-        var len = Math.min(datasetA.length, datasetB.length);
-
-        for(var j=0; j<len; j++){
-            if(op == "/"){
-                if(datasetB[j] == 0) new_data.push(0);
-                else new_data.push(datasetA[j] / datasetB[j]);
-            } else if (op == "-"){
-                new_data.push(datasetA[j] - datasetB[j]);
-            }
-        }
-
-        var label_str = "Chan " + (cA+1) + " " + op + " Chan " + (cB+1);
-        
-        // Add as an additional 49th trace, or replace it if it already exists
-        if(fluo_chart.data.datasets.length == 48){
-            fluo_chart.data.datasets.push({
-                label: label_str,
-                borderColor: "#000000",
-                backgroundColor: "#000000",
-                data: new_data,
-                borderDash: [5, 5],
-                pointRadius: 0
-            });
-            // If ct_chart and melting_chart exist on the window scope (e.g. analysis.js), they can be linked too,
-            // but for data_query.js we might only update fluorescence. 
-            // Checking availability:
-            if(typeof window.ct_chart !== 'undefined') {
-                window.ct_chart.data.datasets.push({
-                    label: label_str,
-                    borderColor: "#000000",
-                    backgroundColor: "#000000",
-                    data: new_data,
-                    borderDash: [5, 5],
-                    pointRadius: 0
-                });
-            }
-        } else {
-            // Update the existing 49th dataset
-            fluo_chart.data.datasets[48].data = new_data;
-            fluo_chart.data.datasets[48].label = label_str;
-            if(typeof window.ct_chart !== 'undefined') {
-                window.ct_chart.data.datasets[48].data = new_data;
-                window.ct_chart.data.datasets[48].label = label_str;
-            }
-        }
-
-        fluo_chart.update();
-        if(typeof window.ct_chart !== 'undefined') {
-            window.ct_chart.update();
-        }
-    };
 }
 
 

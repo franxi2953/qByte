@@ -2,13 +2,12 @@
 //http://dl.espressif.com/dl/package_esp32_index.json
 
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <AsyncTCP.h>
 #include <ESPmDNS.h>
 #include <esp_task_wdt.h>  
-#include <FastLED.h>
 #include <Wire.h>
 #include <TLC59108.h>
-#include "src/analogWrite.h"
 #include <Adafruit_ADS1X15.h>
 #include <Adafruit_TLA202x.h>
 #include <PID_v2.h>
@@ -23,9 +22,6 @@
 
 String V_SOFTWARE = "2.0.2";
 String UPDATE_SERVER = "daicochiti.xyz";
-
-#define NUM_LEDS 3
-#define DATA_PIN 27
 
 //define int constants for using the segment names instead of numbers
 #define WELL1 0
@@ -42,6 +38,7 @@ struct config_t {
   bool DEBUG=true;
   float WEIGHTS[8] = {100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00};
   int LID_DIFFERENCE = 5;
+  int FLUO_DELAY_US = 100; // microseconds delay for fluorescence mux settling
   int LID_TEMP = 95;
   int MELTING_RANGE[2] = {50,95}; //The temperature at which the melting curve starts. 
   float MELTING_STEP = 0.2; //The temperature step of the melting curve.
@@ -51,13 +48,12 @@ struct config_t {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// LEDs control (version 1)
-CRGB leds[NUM_LEDS];
-
 Adafruit_ADS1115 PD_array;
 
-//LEDs control (version 2)
-TLC59108 leds2(0x40);
+// LEDs control (3 colors, 3 I2C drivers)
+TLC59108 leds_blue(0x40);
+TLC59108 leds_red(0x41);
+TLC59108 leds_green(0x42);
 
 //WEBSERVER
 AsyncWebServer server(80);
@@ -68,12 +64,11 @@ int millis_reconnect = 60000;
 long int last_reconnect = 0;
 
 //HEATING
-#define PWM_1 23
-#define PWM_2 19
-#define PWM_3 18
-#define PWM_LID 5
+#define PWM_1 33
+#define PWM_2 34
+#define PWM_3 35
+#define PWM_LID 36
 
-int temp_pin[5] = {32,33,34,35,36}; //{wells_segment_1, wells_segment_2, wells_segment_3, lid, room temp};
 int mean_temp = 0;
 float heater_goal = 0;
 
@@ -91,19 +86,20 @@ PID_v2 PWM_PID_3(Kp, Ki, Kd, PID::Direct);
 PID_v2 PWM_PID_LID(Kp, Ki, Kd, PID::Direct);
 
 //FLUORESCENCE READING
-#define SW1 16
-#define SW2 17
-#define SW3 26
+#define SW1 5
+#define SW2 6
+#define SW3 7
 #define SW4 25
 
 #define GAIN GAIN_FOUR
 
-int variable_gain[] = {0,0,0,0,0,0,0,0}; //to store the gain of each channel
+int variable_gain[48] = {0}; // 8 wells * 3 colors * 2 photodiodes
 adsGain_t gain_dict[] = {GAIN_SIXTEEN, GAIN_EIGHT, GAIN_FOUR, GAIN_TWO,GAIN_ONE, GAIN_TWOTHIRDS}; //to translate the gain to the constants
 float step_dict[] = {0.0078125, 0.015625, 0.03125, 0.0625, 0.125, 0.1875}; // to transform the reading to mV
 
 //Protocol
 long int last_cycle_time = 0; //To control the entrance in a new cycle of measurement
+volatile bool force_manual_cycle = false;
 long int last_melting_cycle_time = 0; //To control the entrance in a new cycle of measurement in the melting
 bool OnGoing = false; //Is there an experiment in progress?
 bool OnGoingMelting = false; //Is there a melting curve in progress?
@@ -127,10 +123,8 @@ void setup() {
 }
 
 void loop() {
-
   if (Serial.available())
     serialCommand();
-      
 
   //Check if wifi is connected, try to reconnect if not or start AP mode.
   check_wifi_with_fallback();
@@ -141,12 +135,6 @@ void loop() {
   //keeping the fluorescent reading cycles and data storage
   PerformCycle();
   PerformMelting();
-
-  if (reading_fluorescence)
-  {
-    reading_fluorescence = false;
-    fluorescence_values = runFluorescenceCycle();
-  }
 
   if (calibrate)
   {
