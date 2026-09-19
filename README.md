@@ -104,30 +104,28 @@ Note: For any issues or questions, refer to the serial monitor for additional co
 
 1. Assemble the device according to the blueprints in [Components](#components).
 
-2. Install the [Arduino IDE](https://www.arduino.cc/en/software) 1.8.1, ready to upload the code and the [SPIFFS](https://randomnerdtutorials.com/install-esp32-filesystem-uploader-arduino-ide/) files to the ESP32.
+2. Install [PlatformIO Core](https://docs.platformio.org/en/latest/core/installation/index.html) or the [PlatformIO IDE extension](https://platformio.org/install/ide?install=vscode). PlatformIO supports Linux, Ubuntu, macOS, and Windows.
 
-3. The microcontroller is the ESP32-WROOM-32 by Espressif Systems but it may appear in the IDE as DOIT ESP32 DEVKIT V1. Go to the Tools > Board > Boards Manager menu. A searchable list of installable packages should appear in a sidebar. Install ESP32 by Espressif Systems board manager version 1.0.6.
-
-4. Go to Tools > Library Manager or click the books icon in the sidebar of the IDE. Install the following libraries and versions:
-      - FastLED library version 3.5.0.
-      - PID_v2 library by Brett Beauregard version 2.0.1.
-      - ArduinoJson library version 6.17.2.
-      - SPIFFS file system size: Default 4MB with SPIFFS (1.2MB APP/1.5MB SPIFFS).
-      - Math library.
-
-5. Download the ZIP archives in [`Production/embedded system/libraries`](Production/embedded%20system/libraries). In Arduino IDE, select **Sketch > Include Library > Add .ZIP Library** for each archive. See the [Arduino library installation guide](https://docs.arduino.cc/software/ide-v1/tutorials/installing-libraries/) for details.
-
-   Alternatively, install [PlatformIO](https://platformio.org/install), open `Production/embedded system`, and run:
+3. Build the firmware and SPIFFS interface from `Production/embedded system`:
 
    ```bash
+   cd "Production/embedded system"
    pio run
+   pio run --target buildfs
+   ```
+
+   [`platformio.ini`](Production/embedded%20system/platformio.ini) pins ESP32 Arduino 1.0.6 and loads the required device-specific libraries directly from [`libraries`](Production/embedded%20system/libraries).
+
+4. Connect the ESP32-WROOM-32, which is configured as a DOIT ESP32 DEVKIT V1, and upload both images:
+
+   ```bash
    pio run --target upload
    pio run --target uploadfs
    ```
 
-   [`platformio.ini`](Production/embedded%20system/platformio.ini) pins ESP32 Arduino 1.0.6 and loads the device-specific libraries directly from the bundled ZIP archives.
+   If Windows detects the CP210x serial adapter but WSL does not expose a `/dev/ttyUSB*` device, run PlatformIO or `esptool` on Windows, or attach the USB device to WSL with `usbipd`.
 
-6. Follow the [quick start](#quick-start) section.
+5. Follow the [quick start](#quick-start) section.
 
 ## Results
 <details>

@@ -20,13 +20,19 @@ Firmware `2.0.2` and earlier points to the retired `daicochiti.xyz` updater. Tho
 ## Publishing a Release
 
 1. Update `V_SOFTWARE` in `code/main/main.ino` and the version comment at the top of `code/main/data/index.html`.
-2. Build the firmware with PlatformIO using the configuration in the parent directory.
-3. Replace `binaries/main.ino.bin` with `.pio/build/qbyte/firmware.bin`.
+2. Build the firmware and factory filesystem with PlatformIO using the configuration in the parent directory:
+
+   ```bash
+   pio run
+   pio run --target buildfs
+   ```
+
+3. Copy `.pio/build/qbyte/firmware.bin` to `binaries/main.ino.bin` and `.pio/build/qbyte/spiffs.bin` to `binaries/main.spiffs.bin`. PlatformIO generates the bootloader, OTA metadata, and partition table when needed, so those generated files are not stored separately in this repository.
 4. Add any changed interface assets to `file_list.json`. Keep `index.html` last so its version changes only after the supporting files install.
 5. Update `data/fota.json` to the same firmware version, including the matching `?v=<version>` on the binary URL.
 6. Push the release commit to `master`, deploy the update tree to the Mac mini, and verify each public endpoint.
 
-The legacy updater does not verify firmware signatures. Only publish reviewed binaries, and treat write access to `master` as release access.
+The current OTA library does not verify firmware signatures. Only publish reviewed binaries, and treat write access to `master` as release access.
 
 ## Server
 
