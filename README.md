@@ -1,3 +1,5 @@
+> **Original GitLab repository:** This project was originally published in the [qByte directory of Open Bioeconomy Lab's RT-LAMP device repository](https://gitlab.com/open-bioeconomy-lab/diagnostics-hardware/rt-lamp-device/-/tree/master/qByte?ref_type=heads).
+
 ![open_qLAMP](../Photos/diagram_only_qlamp.png)
 
 
