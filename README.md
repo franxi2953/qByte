@@ -1,6 +1,6 @@
 > **Original GitLab repository:** This project was originally published in the [qByte directory of Open Bioeconomy Lab's RT-LAMP device repository](https://gitlab.com/open-bioeconomy-lab/diagnostics-hardware/rt-lamp-device/-/tree/master/qByte?ref_type=heads).
 
-![open_qLAMP](../Photos/diagram_only_qlamp.png)
+![open_qLAMP](Photos/diagram_only_qlamp.png)
 
 
 # Index
@@ -88,7 +88,7 @@ Note: For any issues or questions, refer to the serial monitor for additional co
 
 # Making the device
 
-![Assembly](../Photos/qLAMP%20assembly%20diagram.png)
+![Assembly](Photos/qLAMP%20assembly%20diagram.png)
 
 1. Assembly the device according to the blueprints described in the [components](#Components) section.
 
@@ -110,35 +110,35 @@ Note: For any issues or questions, refer to the serial monitor for additional co
 # Results
 <details>
   <summary markdown="span">SARS-CoV-2 amplification with SYTO 9</summary>
-    <div align="center"><img src ="../Photos/covid_plot.png" width=70%/></div>
+    <div align="center"><img src ="Photos/covid_plot.png" width=70%/></div>
 </details>
 
 <details>
   <summary markdown="span">Enzyme activity characterization with melting curve analysis</summary>
-    ![Enzyme activity](../Photos/Enzyme_activity.png)
-    <div align="center"><img src ="../Photos/Melting_curve.png" width=60%/></div>
+    ![Enzyme activity](Photos/Enzyme_activity.png)
+    <div align="center"><img src ="Photos/Melting_curve.png" width=60%/></div>
 </details>
 
 
 <details>
   <summary markdown="span">Fungal concentration detection in chestnut samples</summary>
-    <div align="center"><img src ="../Photos/cinammomi.png" width=70%/></div>
+    <div align="center"><img src ="Photos/cinammomi.png" width=70%/></div>
 </details>
 
 <details>
   <summary markdown="span">Typhoid detection with CRISPR/Cas12</summary>
-    <div align="center"><img src ="../Photos/CRISPR.png" width=90%/></div>
+    <div align="center"><img src ="Photos/CRISPR.png" width=90%/></div>
 </details>
 
 
 # Components
 ## Costs
 
-![Costs](../Photos/qLAMP costs.png)
+![Costs](Photos/qLAMP%20costs.png)
 
 ## Electronics
 
-![Electronics](../Photos/diagram_only_sch.png)
+![Electronics](Photos/diagram_only_sch.png)
 
 Find them at [Open Source Hardware Lab](https://oshwlab.com/franxi2953/open-qlamp).
 
@@ -164,7 +164,7 @@ The following parts should be printed as follows:
 
 After printing/cutting the plastitc separator, with the help of some double side tape on the borders, attach a piece of [738 JAS Green Lee Filter](https://leefilters.com/colour/738-jas-green/) or [179 Chrome Orange Lee Filter](https://leefilters.com/colour/179-Chrome-Orange/) to filter the emiting light from the signal before the sensing unit.
 
-![GCODE_example](../Photos/gcode%20example.PNG)
+![GCODE_example](Photos/gcode%20example.PNG)
 
 
 # To-Dos
@@ -176,4 +176,4 @@ Thanks you all for making this possible!
 
 # License
 
-![GCODE_example](../Photos/oshw_facts.svg)
+![GCODE_example](Photos/oshw_facts.svg)
