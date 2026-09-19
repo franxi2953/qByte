@@ -20,7 +20,7 @@
 #include <esp32FOTA.hpp>
 #include <HTTPClient.h>
 
-const String V_SOFTWARE = "2.1.1";
+const String V_SOFTWARE = "2.1.2";
 const String UPDATE_BASE_URL = "https://qbyte.daicochiti.xyz";
 
 #define NUM_LEDS 3
