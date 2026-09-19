@@ -12,7 +12,7 @@ const ct_line = {
             ctx.beginPath();
             ctx.moveTo(left, y.getPixelForValue(ct_y_value));
             ctx.lineTo(right, y.getPixelForValue(ct_y_value));
-            ctx.strokeStyle = '#000000';
+            ctx.strokeStyle = themeColor('--text', '#c0caf5');
             ctx.stroke();
             ctx.restore();
         }
@@ -361,8 +361,8 @@ function generate_sample_data() {
         }
         datasets.push({
             label: 'Dataset ' + (j + 1),
-            borderColor: "#1E87F0",
-            backgroundColor: "#1E87F0",
+            borderColor: themeColor(`--chart-${j + 1}`, "#7aa2f7"),
+            backgroundColor: themeColor(`--chart-${j + 1}`, "#7aa2f7"),
             data: data,
             // Add any additional properties you need for each dataset
         });
@@ -378,4 +378,3 @@ function generate_sample_data() {
         datasets: datasets,
     };
 }
-

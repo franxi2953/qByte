@@ -69,6 +69,8 @@ void update () {
     Serial.println("[INFO] This may take 2-5 minutes. Please do not switch off the device.");
     esp32FOTA.handle();
     Serial.println("[INFO] The firmware is up to date!");
+  } else {
+    Serial.println("[ERROR] Firmware updates require an internet connection.");
   }
 }
 
@@ -100,13 +102,15 @@ void Serial_Wifi (String cmd)
     ESP.restart();
   } else {
     // If no quotes found, then print the saved credentials
-    Serial.println("\nSaved credentials");
-    Serial.println("-----------------");
+    Serial.println("\nSaved WiFi network");
+    Serial.println("------------------");
 
-    char* ssid = loadCredentials()[0];
-    char* password = loadCredentials()[1];
-    Serial.println("ssid:" + String(ssid));
-    Serial.println("pwrd:" + String(password) + "\n"); 
+    char** savedCredentials = loadCredentials();
+    Serial.println("ssid:" + String(savedCredentials[0]));
+    // Never echo the saved password to the serial console.
+    delete[] savedCredentials[0];
+    delete[] savedCredentials[1];
+    delete[] savedCredentials;
 
     // Print if wifi is connected
     if (WiFi.status() == WL_CONNECTED) {

@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""
-Simple static file server for ESP32 firmware updates
-Serves files from the current directory
-"""
+"""Small static server for qByte firmware and UI update assets."""
 
 import http.server
 import socketserver
@@ -11,22 +8,23 @@ import sys
 
 class CORSHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
-        # Add CORS headers to allow cross-origin requests
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        # Update assets must never be replaced by a stale Cloudflare response.
+        self.send_header('Cache-Control', 'no-store')
         super().end_headers()
 
     def log_message(self, format, *args):
-        # Custom logging
         print(f"[INFO] {self.address_string()} - {format % args}")
 
+class UpdateServer(socketserver.ThreadingTCPServer):
+    allow_reuse_address = True
+
 def run_server(port=8000, directory='.'):
-    # Change to the specified directory
     os.chdir(directory)
 
-    # Create server
-    with socketserver.TCPServer(("", port), CORSHTTPRequestHandler) as httpd:
+    with UpdateServer(("", port), CORSHTTPRequestHandler) as httpd:
         print(f"[INFO] Server running on http://0.0.0.0:{port}")
         print(f"[INFO] Serving directory: {os.getcwd()}")
         print("[INFO] Press Ctrl+C to stop")

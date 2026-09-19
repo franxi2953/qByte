@@ -1,72 +1,37 @@
-# Firmware Update Server
+# qByte Firmware Updates
 
-This directory contains the firmware update server for the qByte LAMP device.
+qByte updates are published through the Mac mini service at `qbyte.daicochiti.xyz`, with the public GitHub repository as the source of truth.
 
-## Directory Structure
+## Published Endpoints
 
+- Manifest: `https://qbyte.daicochiti.xyz/update_server/data/fota.json`
+- Firmware binary: `https://qbyte.daicochiti.xyz/binaries/main.ino.bin?v=<version>`
+- Interface file list: `https://qbyte.daicochiti.xyz/update_server/file_list.json`
+- Interface assets: `https://qbyte.daicochiti.xyz/code/main/data/<filename>`
+
+The firmware checks the manifest only when an update is requested. It updates changed SPIFFS interface files first, then installs a newer firmware binary and restarts. An active experiment prevents updates.
+
+## Device Controls
+
+Open the device at `http://<device-name>.local/` and select **Update firmware**, or send `update` through the 115200-baud serial console. Keep the device powered during the download and restart.
+
+Firmware `2.0.2` and earlier points to the retired `daicochiti.xyz` updater. Those devices need one USB flash to install `2.1.0`; subsequent releases can be installed from the web interface.
+
+## Publishing a Release
+
+1. Update `V_SOFTWARE` in `code/main/main.ino` and the version comment at the top of `code/main/data/index.html`.
+2. Build the firmware with PlatformIO using the configuration in the parent directory.
+3. Replace `binaries/main.ino.bin` with `.pio/build/qbyte/firmware.bin`.
+4. Add any changed interface assets to `file_list.json`. Keep `index.html` last so its version changes only after the supporting files install.
+5. Update `data/fota.json` to the same firmware version, including the matching `?v=<version>` on the binary URL.
+6. Push the release commit to `master`, deploy the update tree to the Mac mini, and verify each public endpoint.
+
+The legacy updater does not verify firmware signatures. Only publish reviewed binaries, and treat write access to `master` as release access.
+
+## Server
+
+The production `launchd` service runs:
+
+```bash
+python3 server.py 8003 ../
 ```
-update_server/
-├── data/                    # Web interface and firmware files
-│   ├── index.html          # Main web interface
-│   ├── style.css           # CSS styles
-│   ├── functions.js        # JavaScript functions
-│   ├── data_query.js       # Data query functions
-│   ├── analysis.js         # Analysis functions
-│   ├── JS_merged.js.gz     # Compressed JavaScript
-│   ├── uikit.min.css.gz    # Compressed CSS framework
-│   ├── config.txt          # Default configuration
-│   ├── credentials.txt     # Default credentials
-│   ├── last_run.txt        # Last run data
-│   ├── protocols.txt       # Protocol definitions
-│   ├── main.ino.bin        # Firmware binary
-│   └── fota.json           # Firmware update manifest
-├── file_list.json          # List of files to update
-├── server.py               # Python HTTPS server
-├── start_server.sh        # Startup script
-└── README.md              # This file
-```
-
-## Setup Instructions
-
-1. **Copy to Raspberry Pi**: Upload the entire `update_server` directory to your Raspberry Pi.
-
-2. **SSL Certificates (Recommended)**: For secure HTTPS, generate SSL certificates:
-   ```bash
-   openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
-   ```
-
-3. **Start the Server**:
-   ```bash
-   cd update_server
-   ./start_server.sh
-   ```
-
-   Or manually:
-   ```bash
-   python3 server.py 443 .
-   ```
-
-## Server Configuration
-
-- **Default Port**: 443 (HTTPS) or 80 (HTTP if no certificates)
-- **Host**: Should be accessible at `daicochiti.xyz`
-- **Endpoints**:
-  - `/data/fota.json` - Firmware update manifest
-  - `/data/main.ino.bin` - Firmware binary
-  - `/file_list` - List of files to update
-  - `/data/<file>` - Individual web interface files
-
-## Security Notes
-
-- The server includes CORS headers for cross-origin requests
-- HTTPS is strongly recommended for production use
-- Ensure the server is only accessible from trusted networks
-
-## Updating Firmware
-
-1. Replace `data/main.ino.bin` with the new firmware binary
-2. Update the version in `data/fota.json`
-3. Update `file_list.json` if new files are added
-4. Restart the server
-
-The ESP32 device will automatically check for updates and download new firmware when available.

@@ -505,6 +505,42 @@ GET http://device-ip/led_trial
 
 ---
 
+### 10. Device Configuration and Updates
+
+#### GET `/device-config`
+Read the device IP address, mDNS name, Wi-Fi SSID, and saved interface theme. The saved Wi-Fi password is never returned.
+
+**Response:** JSON with `ip`, `mdns`, `ssid`, and `theme` fields.
+
+#### GET `/device-config?theme=<theme>`
+Save the interface theme without restarting the device. Supported values are `tokyo-night`, `catppuccin`, `nord`, and `sunset`.
+
+#### GET `/device-config?save=1&mdns=<name>&ssid=<ssid>&password=<password>`
+Save Wi-Fi and mDNS settings and restart the device.
+
+Send `mdns`, `ssid`, and `password` as query parameters. Leave `password` empty to keep the existing password.
+
+```bash
+curl 'http://device-ip/device-config?save=1&mdns=qbyte&ssid=my-network&password=my-secret'
+```
+
+#### GET `/firmware-update`
+Read the installed firmware version and update state.
+
+**Response:** JSON with `version`, `manifest`, `updating`, and `experiment_running` fields.
+
+#### GET `/firmware-update?start=1`
+Start a firmware and web-interface update from the GitHub manifest. The device must have internet access and no experiment may be running. The endpoint returns `202` and the update continues after the response is sent.
+
+```bash
+curl 'http://device-ip/firmware-update?start=1'
+```
+
+The manifest URL used by the current firmware is:
+`https://qbyte.daicochiti.xyz/update_server/data/fota.json`
+
+---
+
 ## Common Workflows
 
 ### Starting an Experiment
@@ -555,7 +591,7 @@ GET http://device-ip/fluo
 
 ## Notes
 
-1. **All endpoints use HTTP GET requests** - No POST methods are currently used in the implementation
+1. **All endpoints use HTTP GET requests.** Writes use query parameters because this firmware's legacy AsyncWebServer stack does not reliably process request bodies.
 2. **Configuration changes are persisted** - Settings like cycle_time, lid_temp, melting parameters are saved to device storage
 3. **Protocol data is stored in SPIFFS** - The `/last_run.txt` file contains experiment data
 4. **No concurrent experiments** - Only one protocol can run at a time

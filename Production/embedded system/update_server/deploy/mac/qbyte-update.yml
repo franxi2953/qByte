@@ -1,0 +1,7 @@
+tunnel: 77521402-54f4-4370-92a0-852b39f71dcd
+protocol: http2
+edge-ip-version: "6"
+ingress:
+  - hostname: qbyte.daicochiti.xyz
+    service: http://127.0.0.1:8003
+  - service: http_status:404

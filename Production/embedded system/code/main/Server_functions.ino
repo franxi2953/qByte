@@ -7,16 +7,20 @@ void serverBegin() {
 void connect_wifi(int time_trying) {
 
   Serial.println("\n");
-  char* ssid = loadCredentials()[0];
-  char* password = loadCredentials()[1];
+  char** savedCredentials = loadCredentials();
+  String ssid = savedCredentials[0];
+  String password = savedCredentials[1];
+  delete[] savedCredentials[0];
+  delete[] savedCredentials[1];
+  delete[] savedCredentials;
 
   WiFi.disconnect();
   WiFi.mode(WIFI_STA);
   delay(200);
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid.c_str(), password.c_str());
   delay(1000);
   
-  Serial.print("[INFO] Connecting to " + String(ssid) + ":" + String(password) + "...");
+  Serial.print("[INFO] Connecting to " + ssid + "...");
 
   int dot_counter=0;
   int timeout = millis();
@@ -80,7 +84,8 @@ void connect_wifi(int time_trying) {
       server.on("/protocols", protocol_library);
       server.on("/variable_gains", _variable_gains); 
       server.on("/free_memory", _free_memory);
-      server.on("/device-config", _device_config); 
+      server.on("/device-config", _device_config);
+      server.on("/firmware-update", _firmware_update);
       server.serveStatic("/",SPIFFS,"/");
 
       
@@ -117,24 +122,19 @@ void handleNotFound(AsyncWebServerRequest *request) {
 }
 
 bool loadFromSPIFFS(String path, AsyncWebServerRequest *request) {
-  String dataType = "text/html";
- 
   Serial.print("[INFO] Requested page -> ");
   Serial.println(path);
-  if (SPIFFS.exists(path) || SPIFFS.exists(path + ".gz")) {
-    AsyncWebServerResponse* response = request->beginResponse(SPIFFS, path);
-    if (SPIFFS.exists(path + ".gz")) {
-      path += ".gz";
-      AsyncWebServerResponse* response = request->beginResponse(SPIFFS, path);
-      response->addHeader("Content-Encoding", "gzip");
-    } else {
-      AsyncWebServerResponse* response = request->beginResponse(SPIFFS, path);
-    }
-      request->send(response);
-  }else{
-      handleNotFound(request);
-      return false;
+
+  const bool compressed = SPIFFS.exists(path + ".gz");
+  if (!compressed && !SPIFFS.exists(path)) {
+    handleNotFound(request);
+    return false;
   }
+
+  if (compressed) path += ".gz";
+  AsyncWebServerResponse* response = request->beginResponse(SPIFFS, path);
+  if (compressed) response->addHeader("Content-Encoding", "gzip");
+  request->send(response);
   return true;
 }
 
@@ -613,28 +613,35 @@ void _free_memory (AsyncWebServerRequest *request) {
 }
 
 void _device_config(AsyncWebServerRequest *request) {
-  if (request->method() == HTTP_GET) {
-    // Get current device config
-    DynamicJsonDocument doc(256);
-    doc["ip"] = WiFi.localIP().toString();
-    doc["mdns"] = config.mDNS;
-    char** creds = loadCredentials();
-    doc["ssid"] = creds[0];
-    doc["password"] = creds[1];
-    Serial.println("[INFO] Loaded credentials for device config");
-    String json;
-    serializeJson(doc, json);
-    request->send(200, "application/json", json);
-    delete[] creds[0];
-    delete[] creds[1];
-    delete[] creds;
-  } else if (request->method() == HTTP_POST) {
-    // Update device config
-    if (request->hasParam("mdns", true) && request->hasParam("ssid", true) && request->hasParam("password", true)) {
-      String mdns = request->getParam("mdns", true)->value();
-      String ssid = request->getParam("ssid", true)->value();
-      String password = request->getParam("password", true)->value();
-      if (ssid.length() > 0) saveCredentials(ssid, password);
+  if (request->hasParam("theme") && !request->hasParam("save")) {
+    String theme = request->getParam("theme")->value();
+    if (theme != "tokyo-night" && theme != "catppuccin" && theme != "nord" && theme != "sunset") {
+      request->send(400, "text/plain", "Unknown theme");
+      return;
+    }
+    config.THEME = theme;
+    saveConfig();
+    request->send(200, "text/plain", "Theme saved");
+    return;
+  }
+
+  // This legacy AsyncWebServer build handles query-string GETs reliably;
+  // use ?save=1 for writes instead of a request body.
+  if (request->hasParam("save")) {
+    if (request->hasParam("mdns") && request->hasParam("ssid") && request->hasParam("password")) {
+      String mdns = request->getParam("mdns")->value();
+      String ssid = request->getParam("ssid")->value();
+      String password = request->getParam("password")->value();
+      if (ssid.length() > 0) {
+        if (password.length() == 0) {
+          char** creds = loadCredentials();
+          password = creds[1];
+          delete[] creds[0];
+          delete[] creds[1];
+          delete[] creds;
+        }
+        saveCredentials(ssid, password);
+      }
       if (mdns.length() > 0) { config.mDNS = mdns; saveConfig(); }
       request->send(200, "text/plain", "OK");
       delay(500);
@@ -642,70 +649,140 @@ void _device_config(AsyncWebServerRequest *request) {
     } else {
       request->send(400, "text/plain", "Missing parameters");
     }
+    return;
+  }
+
+  if (request->method() == HTTP_GET) {
+    // Never send the saved Wi-Fi password back to a browser.
+    DynamicJsonDocument doc(256);
+    doc["ip"] = WiFi.localIP().toString();
+    doc["mdns"] = config.mDNS;
+    doc["theme"] = config.THEME;
+    char** creds = loadCredentials();
+    doc["ssid"] = creds[0];
+    String json;
+    serializeJson(doc, json);
+    request->send(200, "application/json", json);
+    delete[] creds[0];
+    delete[] creds[1];
+    delete[] creds;
   } else {
     request->send(405, "text/plain", "Method Not Allowed");
   }
 }
 
-String fetchFileContent(String url) {
-  Serial.println("[INFO] Fetching file content from: " + url);
-  HTTPClient http;
-  http.begin(url);
-  int httpCode = http.GET();
-  if (httpCode != HTTP_CODE_OK) {
-    Serial.println("[ERROR] Failed to fetch file: " + url);
-    return String();
-  }
-  return http.getString();
-}
-
-void fetchAndSaveFile(String url, String localPath) {
-  Serial.println("[INFO] Fetching and saving file from: " + url + " to: " + localPath);
-  HTTPClient http;
-  http.begin(url);
-  http.setTimeout(5000);  // Increase timeout to 10 seconds
-  int httpCode = http.GET();
-  if (httpCode != HTTP_CODE_OK) {
-    Serial.println("[ERROR] Failed to fetch file: " + url);
+void _firmware_update(AsyncWebServerRequest *request) {
+  if (request->method() == HTTP_GET && !request->hasParam("start")) {
+    DynamicJsonDocument doc(384);
+    doc["version"] = V_SOFTWARE;
+    doc["manifest"] = UPDATE_BASE_URL + "/update_server/data/fota.json";
+    doc["updating"] = firmwareUpdateRequested || firmwareUpdateInProgress;
+    doc["experiment_running"] = OnGoing || OnGoingMelting;
+    String json;
+    serializeJson(doc, json);
+    request->send(200, "application/json", json);
     return;
   }
-  SPIFFS.remove(localPath);
-  File file = SPIFFS.open(localPath, "w");
-  uint8_t buffer[4096];  // Buffer for holding data chunks
-  WiFiClient* stream = http.getStreamPtr();
-  int emptyReads = 0;  // Counter for empty reads
-  while (http.connected() && (stream->available() > 0 || stream->connected())) {
-    int bytesRead = stream->readBytes(buffer, sizeof(buffer));
-    if (bytesRead == 0) {
-      emptyReads++;
-      if (emptyReads > 5) {  // Break loop after 10 consecutive empty reads
-        break;
-      }
-    } else {
-      emptyReads = 0;  // Reset counter if data is read
-    }
-    file.write(buffer, bytesRead);
+
+  if (request->method() != HTTP_GET) {
+    request->send(405, "text/plain", "Method Not Allowed");
+    return;
   }
+  if (OnGoing || OnGoingMelting) {
+    request->send(409, "text/plain", "Stop the active experiment before updating firmware.");
+    return;
+  }
+  if (firmwareUpdateRequested || firmwareUpdateInProgress) {
+    request->send(409, "text/plain", "A firmware update is already in progress.");
+    return;
+  }
+  if (WiFi.status() != WL_CONNECTED) {
+    request->send(503, "text/plain", "An internet connection is required.");
+    return;
+  }
+
+  firmwareUpdateRequested = true;
+  request->send(202, "text/plain", "Update started. Keep the device powered on while it downloads and restarts.");
+}
+
+String fetchFileContent(String url) {
+  Serial.println("[INFO] Fetching file content from: " + url);
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  http.begin(client, url);
+  int httpCode = http.GET();
+  if (httpCode != HTTP_CODE_OK) {
+    Serial.println("[ERROR] Failed to fetch file: " + url);
+    http.end();
+    return String();
+  }
+  String content = http.getString();
+  http.end();
+  return content;
+}
+
+bool fetchAndSaveFile(String url, String localPath) {
+  Serial.println("[INFO] Fetching and saving file from: " + url + " to: " + localPath);
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  http.begin(client, url);
+  http.setTimeout(15000);
+  int httpCode = http.GET();
+  if (httpCode != HTTP_CODE_OK) {
+    Serial.println("[ERROR] Failed to fetch file: " + url);
+    http.end();
+    return false;
+  }
+
+  // Download to a temporary file so a failed transfer cannot destroy the
+  // currently working UI asset.
+  String temporaryPath = localPath + ".update";
+  SPIFFS.remove(temporaryPath);
+  File file = SPIFFS.open(temporaryPath, "w");
+  if (!file) {
+    Serial.println("[ERROR] Failed to create temporary file: " + temporaryPath);
+    http.end();
+    return false;
+  }
+  int written = http.writeToStream(&file);
   file.close();
+  http.end();
+  if (written <= 0) {
+    SPIFFS.remove(temporaryPath);
+    Serial.println("[ERROR] Download was empty: " + url);
+    return false;
+  }
+
+  SPIFFS.remove(localPath);
+  if (!SPIFFS.rename(temporaryPath, localPath)) {
+    Serial.println("[ERROR] Failed to install downloaded file: " + localPath);
+    return false;
+  }
+  return true;
 }
 
 String parseVersion(String html) {
-  int start = html.indexOf("<!-- Version: ") + 14;
+  int marker = html.indexOf("<!-- Version: ");
+  if (marker < 0) return String();
+  int start = marker + 14;
   int end = html.indexOf(" -->", start);
-  if (start < 0 || end < 0) {
-    return String();  // Return an empty string if the version comment is not found
-  }
+  if (end < 0) return String();
   return html.substring(start, end);
 }
 
-void updateSPIFFS() {
+bool updateSPIFFS() {
   Serial.println("[INFO] Updating files...");
-  String onlineIndexHtml = fetchFileContent("https://" + UPDATE_SERVER + "/data/index.html");
+  String uiBaseUrl = UPDATE_BASE_URL + "/code/main/data";
+  String versionQuery = "?v=" + V_SOFTWARE;
+  String onlineIndexHtml = fetchFileContent(uiBaseUrl + "/index.html" + versionQuery);
+  if (onlineIndexHtml.length() == 0) return false;
 
   File localIndexHtmlFile = SPIFFS.open("/index.html", "r");
   if (!localIndexHtmlFile) {
     Serial.println("[ERROR] Failed to open local index.html");
-    return;
+    return false;
   }
   String localIndexHtml = localIndexHtmlFile.readString();
   localIndexHtmlFile.close();
@@ -718,18 +795,21 @@ void updateSPIFFS() {
 
   if (onlineVersion != localVersion) {
     Serial.println("[INFO] Online version is newer, updating files...");
-    // Online version is newer, fetch file list
-    String fileListJson = fetchFileContent("https://" + UPDATE_SERVER + "/file_list");
-    // Parse the JSON and extract the file list
+    String fileListJson = fetchFileContent(UPDATE_BASE_URL + "/update_server/file_list.json" + versionQuery);
     DynamicJsonDocument doc(1024);
-    deserializeJson(doc, fileListJson);
+    DeserializationError error = deserializeJson(doc, fileListJson);
+    if (error) {
+      Serial.println("[ERROR] Invalid UI update file list");
+      return false;
+    }
     JsonArray fileList = doc["files"];
-    // Update each file
     for (JsonVariant file : fileList) {
-      fetchAndSaveFile("https://" + UPDATE_SERVER + "/data/" + file.as<String>(), "/" + file.as<String>());
+      String filename = file.as<String>();
+      if (!fetchAndSaveFile(uiBaseUrl + "/" + filename + versionQuery, "/" + filename)) return false;
     }
     Serial.println("[INFO] SPIFFS updated!");
   } else {
     Serial.println("Local version is up-to-date, no need to update files.");
   }
+  return true;
 }

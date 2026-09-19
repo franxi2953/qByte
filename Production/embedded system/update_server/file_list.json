@@ -1,5 +1,10 @@
 {
   "files": [
+    "style.css",
+    "functions.js",
+    "data_query.js",
+    "analysis.js",
+    "device_settings.js",
     "index.html"
   ]
 }

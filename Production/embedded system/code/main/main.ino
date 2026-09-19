@@ -10,19 +10,18 @@
 #include <TLC59108.h>
 #include "src/analogWrite.h"
 #include <Adafruit_ADS1X15.h>
-#include <Adafruit_TLA202x.h>
 #include <PID_v2.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
-#include <Math.h>
+#include <math.h>
 #include <esp32FOTA.hpp>
 #include <HTTPClient.h>
 
-String V_SOFTWARE = "2.0.2";
-String UPDATE_SERVER = "daicochiti.xyz";
+const String V_SOFTWARE = "2.1.1";
+const String UPDATE_BASE_URL = "https://qbyte.daicochiti.xyz";
 
 #define NUM_LEDS 3
 #define DATA_PIN 27
@@ -40,6 +39,7 @@ struct config_t {
   String mDNS = "qLAMP";
   unsigned int CYCLE_TIME = 60000;
   bool DEBUG=true;
+  String THEME = "tokyo-night";
   float WEIGHTS[8] = {100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00};
   int LID_DIFFERENCE = 5;
   int LID_TEMP = 95;
@@ -48,6 +48,10 @@ struct config_t {
   int MELTING_TIME = 10000; //The time at which the melting curve is at a given temperature.
   int VERSION = 1;
 } config;
+
+// Arduino's automatic prototype generator does not reliably detect pointer
+// return types across split .ino files, so declare this shared helper here.
+char** loadCredentials();
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -118,9 +122,16 @@ String fluorescence_values = "";
 
 bool calibrate = false;
 
+// Web requests only schedule an update. The main loop performs the blocking
+// download after the HTTP response has been sent to the browser.
+bool firmwareUpdateRequested = false;
+bool firmwareUpdateInProgress = false;
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-esp32FOTA esp32FOTA("qbyte", V_SOFTWARE);
+// The update service uses HTTPS. This legacy ESP32 stack has no maintained CA
+// bundle, so transport verification is disabled; publish only reviewed files.
+esp32FOTA esp32FOTA("qbyte", V_SOFTWARE, false, true);
 
 void setup() {
   Initialize();  
@@ -154,6 +165,13 @@ void loop() {
     calibrateFluorescence();
   }
 
+  if (firmwareUpdateRequested && !OnGoing && !OnGoingMelting)
+  {
+    firmwareUpdateRequested = false;
+    firmwareUpdateInProgress = true;
+    delay(500); // Allow the HTTP 202 response to reach the browser.
+    update();
+    firmwareUpdateInProgress = false;
+  }
+
 }
-
-

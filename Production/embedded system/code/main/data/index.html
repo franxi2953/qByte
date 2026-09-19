@@ -1,12 +1,12 @@
-<!-- Version: 2.0.1 -->
+<!-- Version: 2.1.1 -->
 <!DOCTYPE html>
-<html>
+<html data-theme="tokyo-night">
 <head>
-        <!-- Montserrat Alternates Extrabold font import -->
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@800&display=swap" rel="stylesheet">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>open qLAMP server &#9729;</title>
+    <meta name="color-scheme" content="dark">
+    <title>qByte</title>
+    <link rel="stylesheet" href="uikit.min.css">
     <link rel="stylesheet" href="style.css">
     
     <style>
@@ -25,24 +25,33 @@
 </head>
 
 <body>
-        <!-- Floating config bar -->
-        <div id="config-bar" style="position:fixed;top:20px;left:40px;width:calc(100% - 8%);background:#fff;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,0.08);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;">
-            <div style="font-family:'Montserrat Alternates',sans-serif;font-weight:800;font-size:2rem;letter-spacing:1px;color:#222;">qByte</div>
-            <div style="display:flex;align-items:center;gap:10px;">
-                <form id="config-form" style="display:flex;align-items:center;gap:10px;">
-                    <label style="margin-right:5px;font-weight:bold;">IP:</label>
-                    <input type="text" id="device-ip" style="width:120px;" readonly>
-                    <label style="margin-right:5px;font-weight:bold;">mDNS:</label>
-                    <input type="text" id="device-mdns" style="width:120px;">
-                    <label style="margin-right:5px;font-weight:bold;">SSID:</label>
-                    <input type="text" id="device-ssid" style="width:120px;">
-                    <label style="margin-right:5px;font-weight:bold;">Password:</label>
-                    <input type="password" id="device-password" style="width:120px;">
-                    <button type="submit" class="uk-button uk-button-primary uk-button-small" id="save-btn">Save</button>
-                </form>
+        <header id="config-bar" class="device-toolbar">
+            <div class="brand-block">
+                <div class="brand-name" id="qbyte-logo" aria-label="qByte">qByte</div>
+                <span id="firmware-version" class="firmware-version">Firmware</span>
             </div>
-        </div>
-        <div style="height:90px;"></div> <!-- Spacer for floating bar -->
+            <form id="config-form" class="device-config-form">
+                <label>IP <input type="text" id="device-ip" readonly></label>
+                <label>mDNS <input type="text" id="device-mdns"></label>
+                <label>SSID <input type="text" id="device-ssid"></label>
+                <label>Password <input type="password" id="device-password" placeholder="Keep current"></label>
+                <button type="submit" class="uk-button uk-button-primary uk-button-small" id="save-btn">Save</button>
+            </form>
+            <label class="theme-control">Theme
+                <select id="theme-select" class="uk-select uk-form-small" aria-label="Interface theme">
+                    <option value="tokyo-night">Tokyo Night</option>
+                    <option value="catppuccin">Catppuccin</option>
+                    <option value="nord">Nord Aurora</option>
+                    <option value="sunset">Pastel Sunset</option>
+                </select>
+            </label>
+            <div class="firmware-controls">
+                <span id="developer-status" class="developer-status" aria-live="polite"></span>
+                <button type="button" class="uk-button uk-button-default uk-button-small" id="firmware-update">Update firmware</button>
+                <span id="firmware-status" role="status" aria-live="polite"></span>
+            </div>
+        </header>
+        <div class="toolbar-spacer"></div>
         <div class="uk-container uk-container-xlarge uk-margin-medium-top">
         <div class="uk-grid">
 
@@ -90,7 +99,7 @@
             <li>
                 <a href="#">Analysis</a>
             </li>
-            <li>
+            <li class="developer-only">
                 <a href="#">Calibrating</a>
             </li>
         </ul>
@@ -121,7 +130,7 @@
                     </div>
                     <div class="uk-width-3-4">
                         <!-- draw a canvas for drawing the tubes with javascript -->
-                        <canvas id="tubes" width="600" height="100"></canvas>
+                        <canvas id="tubes" width="600" height="112"></canvas>
                         <!-- add a table for the sample types to be updated with javascript-->
                         <table class="uk-table uk-table-striped uk-table-hover uk-table-small uk-tabble-middle" style="width:700px;table-layout: fixed;">
                             <thead>
@@ -129,12 +138,10 @@
                                     <th>Sample color</th>
                                     <th>Sample name</th>
                                     <th>Wells</th>
+                                    <th><span class="uk-hidden">Actions</span></th>
                                 </tr>
                             </thead>
                             <tbody id="sample-table">
-                                <tr>
-                                    
-                                </tr>
                             </tbody>
                         </table>
                         <div style="width:400px; margin-top: 50px;">
@@ -302,7 +309,7 @@
                         </li>
                     </ul>
             </li>
-            <li  class="options" style="visibility: hidden;"> <!-- calibration -->
+            <li class="options developer-only"> <!-- calibration -->
                 <ul class="uk-subnav uk-subnav-pill" uk-switcher>
                     <li>
                         <a href="#">Temperatures</a>
@@ -370,45 +377,7 @@
     <script src="functions.js"></script>
     <script src="data_query.js"></script>
     <script src="analysis.js"></script>
-</body>
-<script>
-// Fetch device config and populate bar
-function fetchDeviceConfig() {
-    fetch('/device-config')
-        .then(res => res.json())
-        .then(cfg => {
-            document.getElementById('device-ip').value = cfg.ip || '';
-            document.getElementById('device-mdns').value = cfg.mdns || '';
-            document.getElementById('device-ssid').value = cfg.ssid || '';
-            document.getElementById('device-password').value = cfg.password || '';
-        });
-}
-
-document.getElementById('config-form').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const mdns = document.getElementById('device-mdns').value;
-  const ssid = document.getElementById('device-ssid').value;
-  const password = document.getElementById('device-password').value;
-  const formData = new FormData();
-  formData.append('mdns', mdns);
-  formData.append('ssid', ssid);
-  formData.append('password', password);
-  const saveBtn = document.getElementById('save-btn');
-  fetch('/device-config', {
-    method: 'POST',
-    body: formData
-  })
-  .then(res => res.ok ? res.text() : Promise.reject(res.text()))
-  .then(msg => {
-    saveBtn.classList.add('blink-green');
-    setTimeout(()=>{saveBtn.classList.remove('blink-green');}, 3000);
-    fetchDeviceConfig();
-  })
-  .catch(()=>{
-    // Error handling if needed
-  });
-});window.addEventListener('DOMContentLoaded', fetchDeviceConfig);
-</script>
+    <script src="device_settings.js"></script>
 </body>
 
 </html>

@@ -12,7 +12,7 @@ void Initialize() {
 
   loadConfig();
  
-  esp32FOTA.setManifestURL("https://" + UPDATE_SERVER + "/data/fota.json");
+  esp32FOTA.setManifestURL(UPDATE_BASE_URL + "/update_server/data/fota.json");
 
     //config.mDNS to char*
   char mDNS[config.mDNS.length() + 1];
@@ -174,7 +174,7 @@ void manage_reset() {
   }
 }
 
-int runPID() {
+void runPID() {
   if (OnGoing)
   {
     int TEMP_PID_1 = calculate_temperature(WELL1);
@@ -209,28 +209,30 @@ int runPID() {
 }
 
 char** loadCredentials() {
-    if (SPIFFS.exists("/credentials.txt")) {
+  String ssid;
+  String password;
+
+  if (SPIFFS.exists("/credentials.txt")) {
     File file = SPIFFS.open("/credentials.txt", "r");
-    String ssid;
-    String password;
-    
     if (file) {
-      // Read the ssid, password from the file
       ssid = file.readStringUntil(',');
       password = file.readStringUntil('\r');
       file.close();
-
-      // Return ssid + password
-      char** result = new char*[2];
-      result[0] = new char[ssid.length() + 1];
-      result[1] = new char[password.length() + 1];
-      strcpy(result[0], ssid.c_str());
-      strcpy(result[1], password.c_str());
-      return result;
+    } else {
+      Serial.println("[ERROR] Could not open credentials.txt");
     }
   } else {
-    Serial.println("[Error] Problem loading credentials");
+    Serial.println("[WARNING] credentials.txt does not exist");
   }
+
+  // Always return two valid strings so first-run AP mode can safely test for
+  // an empty SSID. Callers own the returned strings and array.
+  char** result = new char*[2];
+  result[0] = new char[ssid.length() + 1];
+  result[1] = new char[password.length() + 1];
+  strcpy(result[0], ssid.c_str());
+  strcpy(result[1], password.c_str());
+  return result;
 }
 
 void loadConfig(){
@@ -336,6 +338,12 @@ void loadConfig(){
       } else {
         config.DEBUG = false;
       }
+
+      // Keep the selected interface theme across restarts. Older config files
+      // do not contain this key and therefore retain the Tokyo Night default.
+      if (json.containsKey("theme")) {
+        config.THEME = json["theme"].as<String>();
+      }
       
       if (config.DEBUG == true) {
         Serial.println("[DEBUG] Config file content: " + json_string);
@@ -361,6 +369,7 @@ void saveConfig(){
   json["mDNS"] = config.mDNS;
   json["cycle_time"] = config.CYCLE_TIME;
   json["debug"] = config.DEBUG;
+  json["theme"] = config.THEME;
 
   String weights_string = "[";
   for (int i=0;i<8;i++){

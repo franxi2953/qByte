@@ -1,6 +1,5 @@
 // include the libraries on the file
-// UIKIT
-document.write('<link rel="stylesheet" href="uikit.min.css">');
+// UIkit's JavaScript bundle also includes Chart.js and FileSaver.
 document.write('<script src="JS_merged.js"></script>');
 
 // global variables 
@@ -87,7 +86,7 @@ function updateMemorySlider(memory) {
     memory_slider.style.width = memory + 'px';
 
     if (memory <= 5) {
-        memory_slider.style.background = "#FF5579";
+        memory_slider.style.background = themeColor("--danger", "#f7768e");
         memory_slider.style.width = "100px";
     }
 }
@@ -354,7 +353,7 @@ function updateCharts()
         ctx.filter = "none"
         ctx.opacity = "1"
         ctx.font = "30px Arial";
-        ctx.fillStyle = "black";
+        ctx.fillStyle = themeColor("--text", "#c0caf5");
         ctx.textAlign = "center";
         // find the middle point of the canvas to write the text
         let x = document.getElementById("fluorescence").width / 2;
@@ -568,7 +567,7 @@ function melting_range_set () {
 
             if (answer.includes("[OK]")) {
                 //    change the background of div range to green
-                document.getElementById("range_bar").style.backgroundColor = "#32d296";
+                document.getElementById("range_bar").style.backgroundColor = themeColor("--chart-4", "#9ece6a");
                 setTimeout(function () {
                         // remove the background of div range
                         document.getElementById("range_bar").style.backgroundColor = "";
@@ -589,33 +588,33 @@ function saveProtocolData() {
         datasets: [
             {
                 label: 'Wells 1 temp', 
-                borderColor: "#1E87F0",
-                backgroundColor: "#1E87F0",
+                borderColor: themeColor("--chart-1", "#7aa2f7"),
+                backgroundColor: themeColor("--chart-1", "#7aa2f7"),
                 data: real_data.datasets[0].data,
             },
             {
                 label: 'Wells 2 temp', 
-                borderColor: "#7FD2D1",
-                backgroundColor: "#7FD2D1",
+                borderColor: themeColor("--chart-2", "#bb9af7"),
+                backgroundColor: themeColor("--chart-2", "#bb9af7"),
                 data: real_data.datasets[1].data,
             },
             {
                 label: 'Wells 3 temp', 
-                borderColor: "#87ba9d",
-                backgroundColor: "#87ba9d",
+                borderColor: themeColor("--chart-3", "#7dcfff"),
+                backgroundColor: themeColor("--chart-3", "#7dcfff"),
                 data: real_data.datasets[2].data,
             },
             {
                 label: 'Lid temp', 
-                borderColor: "#AB96D2",
-                backgroundColor: "#AB96D2",
+                borderColor: themeColor("--chart-5", "#e0af68"),
+                backgroundColor: themeColor("--chart-5", "#e0af68"),
                 data: real_data.datasets[3].data,
             },
             {
                 label: 'Target temp',
                 data: real_data.datasets[4].data,
-                borderColor: "#FF5579",
-                backgroundColor: "#FF5579",
+                borderColor: themeColor("--chart-6", "#f7768e"),
+                backgroundColor: themeColor("--chart-6", "#f7768e"),
             }
         ]
     };
@@ -920,14 +919,26 @@ function updateNormalization() {
 
 // ------------------------------------------ EXPERIMENT DESIGN DRAWINGS ------------------------------------------
 
-// create a variable to store the sample type of the 8 tubes
-var tube_ids = ["Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty"];
-// create a dictionary with the possible sample types and their colors
-var sample_types = {
-    "Empty": "#FFFFFF"
+function themeColor(name, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
 }
 
-var palette = ["#1E87F0", "#FF5579", "#87ba9d", "#F5D372", "#AB96D2","#9CA5B5", "#F09D6C","#7FD2D1"]; //the 8 colors used (maximun number of tubes 8)
+function getThemePalette() {
+    return Array.from({ length: 8 }, (_, index) =>
+        themeColor(`--chart-${index + 1}`, "#7aa2f7")
+    );
+}
+
+window.getThemePalette = getThemePalette;
+
+// Store the sample assigned to each of the eight wells.
+var tube_ids = ["Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty", "Empty"];
+var sample_types = {
+    "Empty": themeColor("--tube-empty", "#292e42")
+}
+
+var palette = getThemePalette();
 
 var selected_sample = "Empty";
 
@@ -938,25 +949,53 @@ var selected_sample = "Empty";
 
 window.onload = function () {
     // --------------------------------------- EXPERIMENT DESIGN DRAWINGS ---------------------------------------
-    //draw in the canvas 8 circles in line
     var tubes_canvas = document.getElementById("tubes");
+    palette = getThemePalette();
+    sample_types.Empty = themeColor("--tube-empty", "#292e42");
     
     // Add event listener for the save protocol button
     document.getElementById("save-protocol").addEventListener("click", saveCurrentProtocol);
-    function drawCircles() {
+    function drawCircles(hoveredIndex, syncCharts) {
+        if (typeof hoveredIndex !== "number") hoveredIndex = -1;
+        if (typeof syncCharts === "undefined") syncCharts = true;
+
         var ctx = tubes_canvas.getContext("2d");
-        //draw the circles, if the mouse is over the circle, change the color
+        ctx.clearRect(0, 0, tubes_canvas.width, tubes_canvas.height);
+
+        const tubeBorder = themeColor("--tube-border", "#9aa5ce");
+        const textColor = themeColor("--text", "#c0caf5");
+        const accentColor = themeColor("--accent", "#7aa2f7");
+
         for (var i = 0; i < 8; i++) {
-            ctx.beginPath();
-            ctx.arc(50+(i*50), 50, 20, 0, 2 * Math.PI);
-            // stroke is grey
-            ctx.strokeStyle = "#000000";
-            ctx.stroke();
-            ctx.fillStyle = sample_types[tube_ids[i]];
-            ctx.fill();
+            const x = 52 + (i * 65);
+            const preview = i === hoveredIndex;
+            const fill = preview ? sample_types[selected_sample] : sample_types[tube_ids[i]];
+
+            if (preview) {
+                ctx.beginPath();
+                ctx.arc(x, 48, 25, 0, 2 * Math.PI);
+                ctx.strokeStyle = accentColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
             }
 
-        // change the color and name of the charts based in the tube_ids and the sample_types
+            ctx.beginPath();
+            ctx.arc(x, 48, 19, 0, 2 * Math.PI);
+            ctx.fillStyle = fill;
+            ctx.fill();
+            ctx.strokeStyle = tubeBorder;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = textColor;
+            ctx.font = "600 12px system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(String(i + 1), x, 88);
+        }
+
+        if (!syncCharts) return;
+
+        // Keep graph series aligned with the samples assigned above.
         for (var i = 0; i < 8; i++) {
             // if the tube is empty, change the color to transparent
             if (tube_ids[i] == "Empty") {
@@ -981,8 +1020,28 @@ window.onload = function () {
             melting_chart.data.datasets[i].label = tube_ids[i];
         }
         updateCharts();
+    }
 
-        }   
+    window.redrawTubes = function () {
+        palette = getThemePalette();
+        sample_types.Empty = themeColor("--tube-empty", "#292e42");
+        const sampleNames = Object.keys(sample_types).filter(name => name !== "Empty");
+        sampleNames.forEach((name, index) => {
+            sample_types[name] = palette[index % palette.length];
+        });
+        drawCircles();
+        updateSampleTable();
+    };
+
+    function tubeIndexFromEvent(event) {
+        const rect = tubes_canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * (tubes_canvas.width / rect.width);
+        const y = (event.clientY - rect.top) * (tubes_canvas.height / rect.height);
+        for (var i = 0; i < 8; i++) {
+            if (Math.hypot(x - (52 + i * 65), y - 48) <= 24) return i;
+        }
+        return -1;
+    }
 
     // execute it
     drawCircles();
@@ -990,55 +1049,23 @@ window.onload = function () {
 
     //add the event listener to the canvas
     tubes_canvas.addEventListener("mousemove", function(e) {
-        var ctx = tubes_canvas.getContext("2d");
+        drawCircles(tubeIndexFromEvent(e), false);
+    }, false);
 
-        var x = e.clientX - tubes_canvas.offsetLeft;
-        var scrolled_distance = window.pageYOffset;
-        var y = e.clientY - tubes_canvas.offsetTop + scrolled_distance;
-        for (var i = 0; i < 8; i++) {
-            ctx.beginPath();
-            // if the mouse is over the circle, change the color to selected color
-            if (Math.sqrt(Math.pow(x-50-(i*50), 2) + Math.pow(y-50, 2)) < 20) {
-                // obtain the next element in the dictionary after the current one and if it is undefined, return the first element
-                ctx.fillStyle = sample_types[selected_sample];
-                ctx.strokeStyle = sample_types[selected_sample];
-            } else { // else, change the color back to its original color
-                ctx.fillStyle = sample_types[tube_ids[i]];
-                ctx.strokeStyle = sample_types[tube_ids[i]];
-            }
-            ctx.arc(50+(i*50), 50, 15, 0, 2 * Math.PI);
-            ctx.stroke();
-            ctx.fill();
-        }
-    }
-    , false);	
+    tubes_canvas.addEventListener("mouseleave", function() {
+        drawCircles(-1, false);
+    });
 
 
 
     // when the mouse click on a circle, change the sample type and the color of the tube
     tubes_canvas.addEventListener("click", function(e) {
-        
-        var ctx = tubes_canvas.getContext("2d");
-
-        var x = e.clientX - tubes_canvas.offsetLeft;
-
-        var scrolled_distance = window.pageYOffset;
-        var y = e.clientY - tubes_canvas.offsetTop + scrolled_distance;
-        for (var i = 0; i < 8; i++) {
-            ctx.beginPath();
-            ctx.arc(50+(i*50), 50, 20, 0, 2 * Math.PI);
-            ctx.strokeStyle = "#000000";
-            ctx.stroke();
-
-            // if the mouse is over the circle, change the color to the next element
-            if (Math.sqrt(Math.pow(x-50-(i*50), 2) + Math.pow(y-50, 2)) < 20) {
-                tube_ids[i] = selected_sample;
-            }
-        }
+        const index = tubeIndexFromEvent(e);
+        if (index < 0) return;
+        tube_ids[index] = selected_sample;
         drawCircles();
         updateSampleTable();
-    }
-    , false);
+    }, false);
 
 
     // ------------------------------ EXPERIMENT DESIGN SAMPLE TABLE DRAWINGS ------------------------------
@@ -1049,8 +1076,8 @@ window.onload = function () {
     function updateSampleTable() {
         // console.log("updated");
         // clean the table
-        while (sample_table.rows.length > 1) {
-            sample_table.deleteRow(1);
+        while (sample_table.rows.length > 0) {
+            sample_table.deleteRow(0);
         }
 
         // add one row for each sample type
@@ -1091,7 +1118,7 @@ window.onload = function () {
 
             //if selected_sample is the same as the sample type, change the color of the row
             if (selected_sample == Object.keys(sample_types)[i]) {
-                row.style.backgroundColor = "#E0E0E0";
+                row.classList.add("sample-selected");
             }
         }
     } 
@@ -1111,17 +1138,17 @@ window.onload = function () {
             var sample_type_name = "Sample" + i;
 
             // select the next color from the variable palette that is not used in the sample_types
-            var selected_color = "";
+            var selected_color = null;
 
             for (var i = 0; i < palette.length; i++) {
                 selected_color = palette[i];
                 for (var j = 0; j < sample_type_names.length; j++) {
                     if (palette[i] == sample_types[sample_type_names[j]]) {
-                        selected_color="#FFFFFF";
+                        selected_color = null;
                         break;
                     }
                 }
-                if (selected_color != "#FFFFFF") {
+                if (selected_color) {
                     break;
                 }
             }
@@ -1160,7 +1187,7 @@ window.onload = function () {
         
         if (cell_index == 0) {
         } else if (e.target.cellIndex == 1) {
-            if (row-1 > 1) {
+            if (sample_table.rows[row-1].cells[1].textContent !== "Empty") {
                 // create a text area to change the name of the sample type
                 var input = document.createElement("textarea");
                 // add uk-input
@@ -1202,7 +1229,7 @@ window.onload = function () {
         
         } else if (cell_index == 2) {
         } else if (cell_index == 3) { // DELETE SAMPLE
-            if ((row-1)!=1) {
+            if (sample_table.rows[row-1].cells[1].textContent !== "Empty") {
                 // change all the circles that have the sample type to empty
                 for (var i = 0; i < 8; i++) {
                     if (tube_ids[i] == sample_table.rows[row-1].cells[1].innerHTML) {
@@ -1386,7 +1413,7 @@ window.onload = function () {
                 if (!(Object.keys(protocols_library[name]["samples"])[v] === undefined)) {
                     new_sample_name = Object.keys(protocols_library[name]["samples"])[v];
                     // add the sample to the sample_types
-                    sample_types[new_sample_name] = protocols_library[name]["samples"][new_sample_name][0];
+                    sample_types[new_sample_name] = getThemePalette()[v % 8];
                     tubes_to_fill = protocols_library[name]["samples"][new_sample_name][1]
                     // change the tubes of "tube_ids" with the index tubes_to_fill to the new_sample_name
                     if (Object.keys(protocols_library[name]["samples"])[v] == "test2")
@@ -1666,7 +1693,7 @@ function isProtocolOngoing() {
 
                     if (parseFloat(answer.slice(0, -1)) <= 5)
                     {
-                        memory_slider.style.background = "#FF5579"
+                        memory_slider.style.background = themeColor("--danger", "#f7768e")
                     }
                 }
             }
@@ -1676,8 +1703,3 @@ function isProtocolOngoing() {
 
 
 }
-
-
-
-
-

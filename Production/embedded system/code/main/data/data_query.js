@@ -256,8 +256,8 @@ const fluo_data = {
 for (var i = 0; i < 8; i++) {
     fluo_data.datasets.push({
         label: 'PD' + (i + 1),
-        borderColor: "#FF5579",
-        backgroundColor: "#FF5579",
+        borderColor: themeColor(`--chart-${i + 1}`, "#7aa2f7"),
+        backgroundColor: themeColor(`--chart-${i + 1}`, "#7aa2f7"),
         data: [],
     });
 }
@@ -266,67 +266,71 @@ const temp_data = {
 labels: [],
 datasets: [{
     label: 'Well seg. 1', 
-    borderColor: "#1E87F0",
-    backgroundColor: "#1E87F0",
+    borderColor: themeColor("--chart-1", "#7aa2f7"),
+    backgroundColor: themeColor("--chart-1", "#7aa2f7"),
     data: [],
 },
 {
     label: 'Well seg. 2', 
-    borderColor: "#AB96D2",
-    backgroundColor: "#AB96D2",
+    borderColor: themeColor("--chart-2", "#bb9af7"),
+    backgroundColor: themeColor("--chart-2", "#bb9af7"),
     data: [],
 },
 {
     label: 'Well seg. 3', 
-    borderColor: "#87ba9d",
-    backgroundColor: "#87ba9d",
+    borderColor: themeColor("--chart-3", "#7dcfff"),
+    backgroundColor: themeColor("--chart-3", "#7dcfff"),
     data: [],
 },
 {
     label: 'Lid', 
-    borderColor: "#F5D372",
-    backgroundColor: "#F5D372",
+    borderColor: themeColor("--chart-5", "#e0af68"),
+    backgroundColor: themeColor("--chart-5", "#e0af68"),
     data: [],
 },
 {
     label: 'Target',
-    borderColor: "#FF5579",
-    backgroundColor: "#FF5579",
+    borderColor: themeColor("--chart-6", "#f7768e"),
+    backgroundColor: themeColor("--chart-6", "#f7768e"),
     data: [],
 }]
 };
 
 
+// Keep Chart.js labels and axes readable against the default dark interface.
+Chart.defaults.color = themeColor("--text", "#c0caf5");
+Chart.defaults.borderColor = themeColor("--border", "#414868");
+
 const calibration_data = {
 labels: [],
 datasets: [{
     label: 'Well seg. 1 resistance', 
-    borderColor: "#1E87F0",
-    backgroundColor: "#1E87F0",
+    borderColor: themeColor("--chart-1", "#7aa2f7"),
+    backgroundColor: themeColor("--chart-1", "#7aa2f7"),
     data: [],
 },
 {
     label: 'Well seg. 2 resistance', 
-    borderColor: "#FF5579",
-    backgroundColor: "#FF5579",
+    borderColor: themeColor("--chart-6", "#f7768e"),
+    backgroundColor: themeColor("--chart-6", "#f7768e"),
     data: [],
 },
 {
     label: 'Well seg. 3 resistance', 
-    borderColor: "#87ba9d",
-    backgroundColor: "#87ba9d",
+    borderColor: themeColor("--chart-3", "#7dcfff"),
+    backgroundColor: themeColor("--chart-3", "#7dcfff"),
     data: [],
 },
 {
     label: 'Lid resistance', 
-    borderColor: "#F5D372",
-    backgroundColor: "#F5D372",
+    borderColor: themeColor("--chart-5", "#e0af68"),
+    backgroundColor: themeColor("--chart-5", "#e0af68"),
     data: [],
 },
 {
     label: 'Chamber resistance',
-    borderColor: "#00A884",
-    backgroundColor: "#00A884",
+    borderColor: themeColor("--chart-4", "#9ece6a"),
+    backgroundColor: themeColor("--chart-4", "#9ece6a"),
     data: [],
 }]
 };
@@ -384,8 +388,8 @@ const signalFluo_data = {
     datasets: [{
         label: 'Initial Signal Fluorescence',
         data: [],
-        backgroundColor: "#FF5579",
-        borderColor: "#FF5579"
+        backgroundColor: getThemePalette(),
+        borderColor: getThemePalette()
     }]
 };
 
@@ -417,8 +421,8 @@ const signalWeights_data = {
     datasets: [{
         label: 'Final Signal Weights (%)',
         data: [],
-        backgroundColor: "#1E87F0",
-        borderColor: "#1E87F0"
+        backgroundColor: getThemePalette(),
+        borderColor: getThemePalette()
     }]
 };
 
@@ -452,8 +456,8 @@ const postSignalFluo_data = {
     datasets: [{
         label: 'Post Calibration Fluorescence',
         data: [],
-        backgroundColor: "#FF5579",
-        borderColor: "#FF5579"
+        backgroundColor: getThemePalette(),
+        borderColor: getThemePalette()
     }]
 };
 
@@ -511,6 +515,35 @@ const postSignalFluoChart = new Chart(
      postSignalFluo_config
     );
 
+function setDatasetColor(dataset, color) {
+    dataset.borderColor = color;
+    dataset.backgroundColor = color;
+}
+
+// Repaint every fixed-purpose chart after the user selects a different theme.
+// Tube-based fluorescence charts are recolored by redrawTubes(), because their
+// colors also depend on the samples assigned to each well.
+window.refreshChartTheme = function () {
+    const colors = getThemePalette();
+    Chart.defaults.color = themeColor("--text", "#c0caf5");
+    Chart.defaults.borderColor = themeColor("--border", "#414868");
+
+    [0, 1, 2, 4, 5].forEach((colorIndex, datasetIndex) => {
+        setDatasetColor(temp_chart.data.datasets[datasetIndex], colors[colorIndex]);
+    });
+    [0, 5, 2, 4, 3].forEach((colorIndex, datasetIndex) => {
+        setDatasetColor(calibration_chart.data.datasets[datasetIndex], colors[colorIndex]);
+    });
+
+    [initialSignalFluoChart, finalSignalWeightsChart, postSignalFluoChart].forEach(chart => {
+        chart.data.datasets[0].backgroundColor = colors.slice();
+        chart.data.datasets[0].borderColor = colors.slice();
+    });
+
+    [fluo_chart, temp_chart, calibration_chart, initialSignalFluoChart,
+        finalSignalWeightsChart, postSignalFluoChart].forEach(chart => chart.update());
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Helper Functions
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -527,7 +560,4 @@ function parseCalibrationResponse(response) {
     parts.shift(); // Remove the "[OK]" element.
     return parts.map(Number);
 }
-
-
-
 

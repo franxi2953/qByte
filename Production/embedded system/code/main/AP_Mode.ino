@@ -73,7 +73,7 @@ const char* config_html = R"rawliteral(
 <body>
   <div class="container">
     <h1>qByte WiFi Setup</h1>
-    <form action="/save-wifi" method="POST">
+    <form action="/save-wifi" method="GET">
       <div class="networks">
         <label for="network-list">Available Networks:</label>
         <select id="network-list" onchange="updateSSID()">
@@ -195,19 +195,19 @@ void startAPMode() {
   });
   
   // Endpoint to save WiFi credentials
-  server.on("/save-wifi", HTTP_POST, [](AsyncWebServerRequest *request) {
+  server.on("/save-wifi", HTTP_GET, [](AsyncWebServerRequest *request) {
     String ssid = "";
     String password = "";
     String mdns = "";
 
-    if (request->hasParam("ssid", true)) {
-      ssid = request->getParam("ssid", true)->value();
+    if (request->hasParam("ssid")) {
+      ssid = request->getParam("ssid")->value();
     }
-    if (request->hasParam("password", true)) {
-      password = request->getParam("password", true)->value();
+    if (request->hasParam("password")) {
+      password = request->getParam("password")->value();
     }
-    if (request->hasParam("mdns", true)) {
-      mdns = request->getParam("mdns", true)->value();
+    if (request->hasParam("mdns")) {
+      mdns = request->getParam("mdns")->value();
     }
 
     if (ssid.length() > 0 && mdns.length() > 0) {
@@ -248,11 +248,15 @@ void startAPMode() {
 }// Modified connect_wifi function that falls back to AP mode
 void connect_wifi_with_fallback(int time_trying) {
   Serial.println("\n");
-  char* ssid = loadCredentials()[0];
-  char* password = loadCredentials()[1];
+  char** savedCredentials = loadCredentials();
+  String ssid = savedCredentials[0];
+  String password = savedCredentials[1];
+  delete[] savedCredentials[0];
+  delete[] savedCredentials[1];
+  delete[] savedCredentials;
 
   // Check if credentials exist
-  if (strlen(ssid) == 0) {
+  if (ssid.length() == 0) {
     Serial.println("[WARNING] No WiFi credentials found. Starting AP mode.");
     startAPMode();
     return;
@@ -261,7 +265,7 @@ void connect_wifi_with_fallback(int time_trying) {
   WiFi.disconnect();
   WiFi.mode(WIFI_STA);
   delay(200);
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid.c_str(), password.c_str());
   delay(1000);
   
   Serial.print("[INFO] Connecting to " + String(ssid) + "...");
@@ -341,6 +345,7 @@ void setupNormalServerRoutes() {
   server.on("/variable_gains", _variable_gains); 
   server.on("/free_memory", _free_memory); 
   server.on("/device-config", _device_config);
+  server.on("/firmware-update", _firmware_update);
   server.serveStatic("/", SPIFFS, "/");
   
   server.onNotFound(handleNotFound);
@@ -363,4 +368,3 @@ void check_wifi_with_fallback() {
     }
   }
 }
-

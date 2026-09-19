@@ -211,6 +211,392 @@ input:checked + .slider:before {
 
 /* #endregion */
 
+/* Theme tokens drive the interface, charts, and tube/sample palette. */
+:root,
+html[data-theme="tokyo-night"] {
+  color-scheme: dark;
+  --page: #1a1b26;
+  --surface: #24283b;
+  --surface-raised: #292e42;
+  --input: #16161e;
+  --border: #414868;
+  --text: #c0caf5;
+  --muted: #9aa5ce;
+  --accent: #7aa2f7;
+  --accent-hover: #89b4fa;
+  --accent-text: #16161e;
+  --danger: #f7768e;
+  --danger-text: #1a1b26;
+  --tube-empty: #292e42;
+  --tube-border: #9aa5ce;
+  --chart-1: #7aa2f7;
+  --chart-2: #bb9af7;
+  --chart-3: #7dcfff;
+  --chart-4: #9ece6a;
+  --chart-5: #e0af68;
+  --chart-6: #f7768e;
+  --chart-7: #ff9e64;
+  --chart-8: #73daca;
+}
+
+html[data-theme="catppuccin"] {
+  --page: #11111b;
+  --surface: #1e1e2e;
+  --surface-raised: #313244;
+  --input: #181825;
+  --border: #45475a;
+  --text: #cdd6f4;
+  --muted: #a6adc8;
+  --accent: #cba6f7;
+  --accent-hover: #b4befe;
+  --accent-text: #11111b;
+  --danger: #f38ba8;
+  --danger-text: #11111b;
+  --tube-empty: #313244;
+  --tube-border: #a6adc8;
+  --chart-1: #89b4fa;
+  --chart-2: #cba6f7;
+  --chart-3: #94e2d5;
+  --chart-4: #a6e3a1;
+  --chart-5: #f9e2af;
+  --chart-6: #f38ba8;
+  --chart-7: #fab387;
+  --chart-8: #74c7ec;
+}
+
+html[data-theme="nord"] {
+  --page: #242933;
+  --surface: #2e3440;
+  --surface-raised: #3b4252;
+  --input: #20252e;
+  --border: #4c566a;
+  --text: #eceff4;
+  --muted: #d8dee9;
+  --accent: #88c0d0;
+  --accent-hover: #8fbcbb;
+  --accent-text: #242933;
+  --danger: #bf616a;
+  --danger-text: #eceff4;
+  --tube-empty: #3b4252;
+  --tube-border: #d8dee9;
+  --chart-1: #88c0d0;
+  --chart-2: #b48ead;
+  --chart-3: #8fbcbb;
+  --chart-4: #a3be8c;
+  --chart-5: #ebcb8b;
+  --chart-6: #bf616a;
+  --chart-7: #d08770;
+  --chart-8: #81a1c1;
+}
+
+html[data-theme="sunset"] {
+  --page: #191724;
+  --surface: #26233a;
+  --surface-raised: #393552;
+  --input: #14111f;
+  --border: #6e6a86;
+  --text: #e0def4;
+  --muted: #c4a7e7;
+  --accent: #f6c177;
+  --accent-hover: #ebbcba;
+  --accent-text: #191724;
+  --danger: #eb6f92;
+  --danger-text: #191724;
+  --tube-empty: #393552;
+  --tube-border: #c4a7e7;
+  --chart-1: #9ccfd8;
+  --chart-2: #c4a7e7;
+  --chart-3: #a2d2ff;
+  --chart-4: #b7e4c7;
+  --chart-5: #f6c177;
+  --chart-6: #eb6f92;
+  --chart-7: #ea9a97;
+  --chart-8: #72efdd;
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--page);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.device-toolbar {
+  position: fixed;
+  top: 12px;
+  left: 2%;
+  z-index: 1000;
+  display: flex;
+  width: 96%;
+  min-height: 64px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.brand-block {
+  flex: 0 0 auto;
+}
+
+.brand-name {
+  color: var(--text);
+  font-size: 1.45rem;
+  font-weight: 750;
+  line-height: 1;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.firmware-version,
+#firmware-status {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.device-config-form {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: end;
+  gap: 9px;
+}
+
+.device-config-form label {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.device-config-form input {
+  width: 118px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  background: var(--input);
+  color: var(--text);
+  padding: 4px 7px;
+}
+
+.device-config-form input:focus {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+}
+
+.device-config-form input[readonly] {
+  color: var(--muted);
+}
+
+.firmware-controls {
+  display: grid;
+  flex: 0 0 auto;
+  min-width: 150px;
+  gap: 4px;
+}
+
+.theme-control {
+  display: grid;
+  flex: 0 0 132px;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.theme-control select {
+  height: 30px;
+  padding: 2px 26px 2px 8px;
+}
+
+.developer-status {
+  min-height: 1em;
+  color: var(--chart-4);
+  font-size: 0.7rem;
+}
+
+.uk-subnav > .developer-only,
+.uk-switcher > .developer-only {
+  display: none !important;
+}
+
+body.developer-mode .uk-subnav > .developer-only {
+  display: list-item !important;
+}
+
+body.developer-mode .uk-switcher > .developer-only.uk-active {
+  display: block !important;
+}
+
+.toolbar-spacer {
+  height: 94px;
+}
+
+.uk-card,
+.uk-card-default {
+  border: 1px solid var(--border);
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  box-shadow: none;
+}
+
+.uk-card-title,
+.uk-heading-xsmall,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.uk-table th,
+.uk-table td,
+.uk-text-left,
+.uk-text-center {
+  color: var(--text) !important;
+}
+
+.uk-input,
+.uk-select,
+.uk-textarea {
+  border-color: var(--border) !important;
+  background: var(--input) !important;
+  color: var(--text) !important;
+}
+
+.uk-table-divider > tr:not(:first-child),
+.uk-table-divider > :not(:first-child) > tr,
+.uk-table-striped > tr:nth-of-type(odd),
+.uk-table-striped tbody tr:nth-of-type(odd) {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.uk-table-hover tbody tr:hover {
+  background: var(--surface-raised) !important;
+}
+
+.uk-subnav-pill > * > :first-child {
+  color: var(--muted);
+}
+
+.uk-subnav-pill > .uk-active > a,
+.uk-button-primary {
+  background: var(--accent) !important;
+  color: var(--accent-text) !important;
+}
+
+.uk-button-primary:hover,
+.uk-button-primary:focus {
+  background: var(--accent-hover) !important;
+}
+
+.uk-button-default {
+  border-color: var(--border) !important;
+  background: var(--surface-raised) !important;
+  color: var(--text) !important;
+}
+
+.uk-button-danger {
+  background: var(--danger) !important;
+  color: var(--danger-text) !important;
+}
+
+.uk-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+#memorySlider {
+  border-color: var(--border);
+  background: var(--input);
+}
+
+#tubes {
+  display: block;
+  width: min(100%, 600px);
+  height: 112px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+
+.small-square {
+  border: 2px solid var(--tube-border);
+  border-radius: 4px;
+}
+
+#sample-table tr.sample-selected {
+  background: var(--surface-raised) !important;
+  box-shadow: inset 3px 0 var(--accent);
+}
+
+#occupiedMemory,
+[slider] > div > [range],
+[slider] > div > [sign] {
+  background-color: var(--accent);
+}
+
+[slider] > div > [sign]:after {
+  border-top-color: var(--accent);
+}
+
+[slider] > div > [thumb] {
+  background-color: var(--text);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+input:checked + .slider {
+  background-color: var(--accent);
+}
+
+@media (max-width: 1100px) {
+  .device-toolbar {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .device-config-form {
+    order: 3;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+  }
+
+  .firmware-controls {
+    margin-left: auto;
+  }
+
+  .theme-control {
+    margin-left: auto;
+  }
+
+  .toolbar-spacer {
+    height: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .device-config-form label,
+  .device-config-form input {
+    width: 100%;
+  }
+
+  .device-config-form label {
+    flex: 1 1 46%;
+  }
+
+  .device-config-form button {
+    flex: 1 1 100%;
+  }
+}
+
 /* #region Double rounded slider*/
 .slider.round {
   border-radius: 17px;
@@ -433,3 +819,22 @@ div[slider] > input[type=range]::-ms-tooltip {
   opacity: 1;
 }
 /* #endregion */
+
+/* Keep legacy slider and toggle rules aligned with the default dark theme. */
+[slider] > div > [range],
+[slider] > div > [sign] {
+  background-color: var(--accent);
+}
+
+[slider] > div > [sign]:after {
+  border-top-color: var(--accent);
+}
+
+[slider] > div > [thumb] {
+  background-color: var(--text);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+input:checked + .slider {
+  background-color: var(--accent);
+}
